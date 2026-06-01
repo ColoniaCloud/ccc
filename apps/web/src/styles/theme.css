@@ -1,0 +1,298 @@
+/* ================================================================
+   CRM SAAS — DESIGN SYSTEM TOKENS
+   theme.css — Fuente única de verdad para todos los valores visuales
+
+   Estructura:
+     1.  Dark mode (default) → :root
+     2.  Light mode overrides → [data-theme="light"]
+     3.  Sistema de z-index
+     4.  Estilos base globales
+     5.  React Aria — capa de compatibilidad
+
+   Uso del toggle:
+     document.documentElement.setAttribute('data-theme', 'light')
+     document.documentElement.removeAttribute('data-theme') → dark
+   ================================================================ */
+
+
+/* ────────────────────────────────────────────────────────────────
+   1. DARK MODE — DEFAULT
+   ──────────────────────────────────────────────────────────────── */
+:root {
+
+  /* ── FONDOS ──────────────────────────────────────────────────
+     Escala de superficies del más profundo al más elevado.
+     Cada nivel representa una capa visual distinta.            */
+  --color-base:       #16161D;   /* Fondo de página */
+  --color-surface-1:  #1E1E26;   /* Cards, sidebar, paneles principales */
+  --color-surface-2:  #252530;   /* Inputs, paneles secundarios */
+  --color-surface-3:  #2D2D3A;   /* Elevados: tooltips, popovers */
+  --color-surface-4:  #363645;   /* Máxima elevación (menús flotantes) */
+
+  /* ── BORDES ───────────────────────────────────────────────── */
+  --color-border:        rgba(255, 255, 255, 0.07);
+  --color-border-strong: rgba(255, 255, 255, 0.13);
+  --color-border-focus:  #7170C0;
+
+  /* ── TEXTO ────────────────────────────────────────────────── */
+  --color-text:           #E4E4EC;   /* Primario */
+  --color-text-secondary: #9090A8;   /* Secundario, labels */
+  --color-text-tertiary:  #5C5C72;   /* Placeholder, hints */
+  --color-text-disabled:  #40404E;   /* Deshabilitado */
+  --color-text-on-accent: #FFFFFF;   /* Texto sobre color de acento */
+
+  /* ── ACENTO / BRAND ───────────────────────────────────────── */
+  --color-accent:         #7170C0;   /* Indigo neutro */
+  --color-accent-hover:   #8180D0;
+  --color-accent-pressed: #6160A8;
+  --color-accent-subtle:  rgba(113, 112, 192, 0.16);
+
+  /* ── SEMÁNTICOS ───────────────────────────────────────────── */
+  --color-success:         #3AB98A;
+  --color-success-subtle:  rgba(58, 185, 138, 0.14);
+  --color-warning:         #E8A838;
+  --color-warning-subtle:  rgba(232, 168, 56, 0.14);
+  --color-danger:          #E5534B;
+  --color-danger-subtle:   rgba(229, 83, 75, 0.14);
+  --color-info:            #58ACEE;
+  --color-info-subtle:     rgba(88, 172, 238, 0.14);
+
+  /* ── ESTADOS INTERACTIVOS ─────────────────────────────────── */
+  --color-hover:       rgba(255, 255, 255, 0.05);
+  --color-pressed:     rgba(255, 255, 255, 0.09);
+  --color-selected:    rgba(113, 112, 192, 0.18);
+  --color-disabled-bg: rgba(255, 255, 255, 0.04);
+
+  /* ── TIPOGRAFÍA ───────────────────────────────────────────── */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'Fira Code',
+               'Cascadia Code', monospace;
+
+  --font-size-xs:  0.6875rem;   /* 11px */
+  --font-size-sm:  0.75rem;     /* 12px */
+  --font-size:     0.875rem;    /* 14px — base del sistema */
+  --font-size-md:  1rem;        /* 16px */
+  --font-size-lg:  1.125rem;    /* 18px */
+  --font-size-xl:  1.25rem;     /* 20px */
+  --font-size-2xl: 1.5rem;      /* 24px */
+  --font-size-3xl: 1.875rem;    /* 30px */
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --line-height-tight:   1.25;
+  --line-height:         1.5;
+  --line-height-relaxed: 1.75;
+  --letter-spacing:     -0.01em;
+
+  /* ── ESPACIADO ────────────────────────────────────────────── */
+  --spacing:    4px;
+  --spacing-1:  4px;
+  --spacing-2:  8px;
+  --spacing-3:  12px;
+  --spacing-4:  16px;
+  --spacing-5:  20px;
+  --spacing-6:  24px;
+  --spacing-8:  32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+
+  /* ── BORDER RADIUS ────────────────────────────────────────── */
+  --radius-sm:   4px;
+  --radius:      6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+
+  /* ── SOMBRAS ──────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.50);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.50),
+               0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow:    0 2px 8px rgba(0, 0, 0, 0.50),
+               0 1px 3px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.60),
+               0 2px 4px  rgba(0, 0, 0, 0.40);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.70),
+               0 4px 8px  rgba(0, 0, 0, 0.40);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.50);
+
+  --focus-ring: 0 0 0 2px var(--color-base),
+                0 0 0 4px var(--color-border-focus);
+
+  --glass-bg:     rgba(30, 30, 38, 0.82);
+  --glass-blur:   blur(20px) saturate(180%);
+  --glass-border: rgba(255, 255, 255, 0.10);
+
+  /* ── TRANSICIONES ─────────────────────────────────────────── */
+  --duration-fast:  100ms;
+  --duration:       150ms;
+  --duration-slow:  200ms;
+  --duration-enter: 200ms;
+  --duration-exit:  150ms;
+
+  --ease:        cubic-bezier(0.2, 0, 0, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.4, 1);
+  --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* ── LAYOUT ───────────────────────────────────────────────── */
+  --sidebar-width:     240px;
+  --sidebar-collapsed:  56px;
+  --header-height:      48px;
+  --content-max-width: 1280px;
+  --panel-max-width:    480px;
+  --dialog-max-width:   500px;
+
+}
+
+
+/* ────────────────────────────────────────────────────────────────
+   2. LIGHT MODE OVERRIDES
+   Solo se sobreescriben los valores que cambian.
+   Accent, tipografía, espaciado y layout permanecen iguales.
+   ──────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+
+  /* ── FONDOS ───────────────────────────────────────────────── */
+  --color-base:       #F2F2F7;
+  --color-surface-1:  #FFFFFF;
+  --color-surface-2:  #EAEAF2;   /* Inputs — gris clarito con tinte índigo */
+  --color-surface-3:  #E2E2EA;
+  --color-surface-4:  #D8D8E3;
+
+  /* ── BORDES ───────────────────────────────────────────────── */
+  --color-border:        rgba(0, 0, 0, 0.10);
+  --color-border-strong: rgba(0, 0, 0, 0.18);   /* Cards — más definidas */
+
+  /* ── TEXTO ────────────────────────────────────────────────── */
+  --color-text:           #16161D;
+  --color-text-secondary: #5C5C72;
+  --color-text-tertiary:  #9090A8;
+  --color-text-disabled:  #C0C0D0;
+  --color-text-input:     #3D3D50;   /* Fuente de inputs — gris oscuro */
+
+  /* ── ACENTO ───────────────────────────────────────────────── */
+  --color-accent-subtle: rgba(113, 112, 192, 0.12);
+
+  /* ── BOTÓN SECUNDARIO ─────────────────────────────────────── */
+  --color-btn-secondary-bg:   #252530;   /* Gris oscuro del dark mode */
+  --color-btn-secondary-text: #E4E4EC;
+
+  /* ── ESTADOS INTERACTIVOS ─────────────────────────────────── */
+  --color-hover:       rgba(0, 0, 0, 0.04);
+  --color-pressed:     rgba(0, 0, 0, 0.08);
+  --color-selected:    rgba(113, 112, 192, 0.10);
+  --color-disabled-bg: rgba(0, 0, 0, 0.04);
+
+  /* ── SOMBRAS ──────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08),
+               0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow:    0 2px 8px rgba(0, 0, 0, 0.08),
+               0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.10),
+               0 2px 4px  rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12),
+               0 4px 8px  rgba(0, 0, 0, 0.06);
+  --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  --focus-ring: 0 0 0 2px var(--color-base),
+                0 0 0 4px var(--color-border-focus);
+
+  --glass-bg:     rgba(255, 255, 255, 0.92);
+  --glass-blur:   blur(20px) saturate(160%);
+  --glass-border: rgba(0, 0, 0, 0.10);
+
+}
+
+
+/* ────────────────────────────────────────────────────────────────
+   3. SISTEMA DE Z-INDEX
+   ──────────────────────────────────────────────────────────────── */
+:root {
+  --z-base:      0;
+  --z-raised:   10;
+  --z-sticky:  100;
+  --z-dropdown: 200;
+  --z-overlay:  300;
+  --z-modal:    400;
+  --z-toast:    500;
+}
+
+
+/* ────────────────────────────────────────────────────────────────
+   4. BASE GLOBAL
+   ──────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  letter-spacing: var(--letter-spacing);
+  color: var(--color-text);
+  background-color: var(--color-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100svh;
+}
+
+html,
+html * {
+  transition-property: background-color, border-color, color;
+  transition-duration: var(--duration);
+  transition-timing-function: var(--ease);
+}
+
+input, textarea, select {
+  transition: none;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+
+/* ────────────────────────────────────────────────────────────────
+   5. REACT ARIA — CAPA DE COMPATIBILIDAD
+   Ref: https://react-aria.adobe.com/styling
+   ──────────────────────────────────────────────────────────────── */
+:root {
+  --highlight-background: var(--color-accent);
+  --highlight-foreground: var(--color-text-on-accent);
+  --highlight-hover:      var(--color-hover);
+  --tint-500:             var(--color-border-strong);
+  --overlay-background:   var(--glass-bg);
+  --overlay-border:       var(--glass-border);
+  --text-color:           var(--color-text);
+  --text-color-base:      var(--color-text);
+  --background-color:     var(--color-base);
+  --page-width:             100svw;
+  --page-height:            100svh;
+  --visual-viewport-height: 100dvh;
+}
