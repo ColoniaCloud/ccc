@@ -14,7 +14,7 @@
     "better-auth": "^1.2.0",
     "next": "^15.0.0",
     "react": "^19.0.0",
-    "react-aria-components": "latest",
+    "react-aria-components": "^1.7.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
