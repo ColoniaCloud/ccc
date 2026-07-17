@@ -83,3 +83,34 @@ Railway subió precios y tiene un modelo de costo menos predecible a escala.
 - Redis (Sprint 2+) → Upstash. Cobra por request, no por instancia.
 **Impacto:** Stack de infraestructura MVP cuesta ~$2-3 USD/mes total
 en lugar de ~$15 USD/mes. Sin cambios en el código de la API.
+
+---
+
+## Infraestructura de producción — Render en lugar de Fly.io
+
+**Fecha:** 2026-07-17
+**Contexto:** Fly.io eliminó su free tier permanente en 2024 — cuentas nuevas
+requieren tarjeta cargada desde el primer deploy. Para la etapa de pruebas del
+MVP (todavía sin usuarios reales pagando) se evaluaron Render, Railway y
+Hostinger. Railway ya había quedado descartado por precio impredecible (ver
+decisión anterior) y en 2026 su free tier se redujo a $1 USD/mes de crédito,
+peor que antes. Hostinger tiene hosting Node.js administrado, pero no está
+pensado para monorepos pnpm ni para procesos siempre-activos con conexión
+persistente a Postgres — hubiera requerido VPS con setup manual (Nginx, PM2,
+Certbot) para replicar lo que Render da de fábrica.
+**Decisión:**
+- API + Web → Render, un service "Free" para cada app, definidos en un solo
+  `render.yaml` en la raíz del repo (soporta el monorepo pnpm sin cambios de
+  código). Deploy automático en cada push a `main` vía conexión a GitHub.
+  Costo: $0/mes mientras el uso esté dentro de las 750 horas gratis/mes.
+- Se abandona el deploy en Fly.io (`fly.toml`, `apps/api/Dockerfile` quedan
+  en el repo sin uso, no se borraron).
+**Trade-off aceptado:** los services free de Render "duermen" a los 15 min sin
+tráfico y tardan ~1 min en despertar. Para un webhook de MercadoPago/NOWPayments
+que llega dormido, el proveedor reintenta y termina procesándose, solo con
+demora la primera vez — aceptable en etapa de pruebas, a revisar antes de
+tener usuarios pagando en producción real (ahí conviene un plan pago sin sleep,
+o volver a Fly.io/VPS).
+**Impacto:** Stack de infraestructura MVP pasa a $0 USD/mes durante pruebas.
+Sin cambios en el código de las apps — mismos scripts `build`/`start` que ya
+usaba Fly.io.

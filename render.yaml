@@ -1,0 +1,72 @@
+# Blueprint de Render para el monorepo — define las dos apps como servicios
+# separados a partir del mismo repo. Las variables marcadas "sync: false"
+# NO se guardan acá (nunca van al repo) — se cargan a mano una vez en el
+# dashboard de Render, igual que hoy viven en apps/api/.env.
+#
+# Deploy: crear cuenta en render.com → New → Blueprint → conectar este repo
+# → Render lee este archivo y propone ambos servicios → completar las env
+# vars marcadas sync:false → Apply. Cada push a main vuelve a desplegar
+# automáticamente.
+
+services:
+  - type: web
+    name: crm-api
+    runtime: node
+    plan: free
+    region: virginia
+    branch: main
+    buildCommand: corepack enable && corepack prepare pnpm@9.0.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @crm/api build
+    startCommand: pnpm --filter @crm/api start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # URL pública de esta misma API — usada para armar los callbacks de
+      # NOWPayments. Poné acá la URL que te da Render (https://crm-api-xxxx.onrender.com)
+      # hasta que crm.colonia.cloud tenga el DNS apuntado; después, cambiala.
+      - key: API_PUBLIC_URL
+        sync: false
+      # URL pública del frontend — usada para back_url de MercadoPago y CORS.
+      - key: WEB_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: MERCADOPAGO_ACCESS_TOKEN
+        sync: false
+      - key: MERCADOPAGO_PUBLIC_KEY
+        sync: false
+      - key: MERCADOPAGO_WEBHOOK_SECRET
+        sync: false
+      - key: MERCADOPAGO_CURRENCY
+        value: UYU
+      - key: MERCADOPAGO_USD_TO_UYU_RATE
+        value: "40"
+      - key: NOWPAYMENTS_API_KEY
+        sync: false
+      - key: NOWPAYMENTS_PUBLIC_KEY
+        sync: false
+      - key: NOWPAYMENTS_IPN_SECRET
+        sync: false
+      - key: NOWPAYMENTS_EMAIL
+        sync: false
+      - key: NOWPAYMENTS_PASSWORD
+        sync: false
+
+  - type: web
+    name: crm-web
+    runtime: node
+    plan: free
+    region: virginia
+    branch: main
+    buildCommand: corepack enable && corepack prepare pnpm@9.0.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @crm/web build
+    startCommand: pnpm --filter @crm/web start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # URL pública del servicio crm-api de arriba (con https://).
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

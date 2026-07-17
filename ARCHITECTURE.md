@@ -4,10 +4,13 @@
 
 | Superficie | Dominio | Tecnología | Responsabilidad |
 |---|---|---|---|
-| **Web pública** | `crm.lat` | Next.js 15 (App Router) | Landing, pricing, registro, onboarding |
-| **App tenant** | `app.crm.lat` o `{tenant}.crm.lat` | Next.js 15 (App Router) | Dashboard, CRM, cotizaciones, reportes |
-| **API** | `api.crm.lat` | Hono + Node.js | REST endpoints, auth, webhooks, jobs |
-| **Admin panel** | `admin.crm.lat` | Next.js 15 (App Router) | Gestión de tenants, métricas globales, soporte |
+| **Web pública + App tenant** | `app.colonia.cloud` | Next.js 15 (App Router) | Landing, registro, onboarding, dashboard, CRM |
+| **API** | `crm.colonia.cloud` | Hono + Node.js | REST endpoints, auth, webhooks (MercadoPago/NOWPayments), jobs |
+| **Admin panel** | sin definir | Next.js 15 (App Router) | Gestión de tenants, métricas globales, soporte — no construido todavía |
+
+Se abandonó el dominio `crm.lat` documentado originalmente a favor de `colonia.cloud`
+(dominio real del usuario). Web pública y app tenant hoy son la misma app
+Next.js (`apps/web`), sin separar por subdominio de tenant todavía.
 
 ---
 
@@ -110,7 +113,8 @@ crm/
 | `STRIPE_SECRET_KEY` | clave test | clave test | clave live |
 | `ANTHROPIC_API_KEY` | clave personal | clave de equipo | clave prod |
 | `PORT` | 3001 | 3001 | definido por plataforma |
-| `WEB_URL` | http://localhost:3000 | https://staging.crm.lat | https://app.crm.lat |
+| `WEB_URL` | http://localhost:3000 | — | https://app.colonia.cloud |
+| `API_PUBLIC_URL` | http://localhost:3001 | — | https://crm.colonia.cloud |
 
 Las variables solo requeridas por `api` viven en `apps/api/.env`.
 Las variables del root `.env` son para herramientas de desarrollo (turbo, scripts globales).
