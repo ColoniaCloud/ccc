@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -21,12 +22,14 @@
     "bullmq": "latest",
     "drizzle-orm": "^0.45.2",
     "hono": "latest",
+    "mercadopago": "^3.2.0",
     "postgres": "^3.4.5"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "drizzle-kit": "^0.31.0",
     "tsx": "latest",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.10"
   }
 }

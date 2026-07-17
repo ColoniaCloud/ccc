@@ -1,4 +1,8 @@
-export type Plan = 'free' | 'pro' | 'business' | 'enterprise'
+export type Plan = 'free' | 'pro' | 'business' | 'master' | 'enterprise'
+
+export type BillingProvider = 'mercadopago' | 'nowpayments'
+
+export type SubscriptionStatus = 'pending' | 'active' | 'paused' | 'cancelled'
 
 export type UserRole = 'admin' | 'manager' | 'seller' | 'support'
 

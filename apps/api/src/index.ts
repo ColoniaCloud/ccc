@@ -5,6 +5,12 @@ import { logger } from 'hono/logger'
 import { HTTPException } from 'hono/http-exception'
 import { authRoutes } from './routes/auth'
 import { meRoutes } from './routes/me'
+import { onboardingRoutes } from './routes/onboarding'
+import { contactsRoutes } from './routes/contacts'
+import { pipelinesRoutes } from './routes/pipelines'
+import { dealsRoutes } from './routes/deals'
+import { tasksRoutes } from './routes/tasks'
+import { billingRoutes } from './routes/billing'
 
 const app = new Hono()
 
@@ -32,6 +38,12 @@ app.get('/health', (c) => {
 
 app.route('/api/auth', authRoutes)
 app.route('/api/me', meRoutes)
+app.route('/api/onboarding', onboardingRoutes)
+app.route('/api/contacts', contactsRoutes)
+app.route('/api/pipelines', pipelinesRoutes)
+app.route('/api/deals', dealsRoutes)
+app.route('/api/tasks', tasksRoutes)
+app.route('/api/billing', billingRoutes)
 
 const port = Number(process.env.PORT) || 3001
 console.log(`API corriendo en http://localhost:${port}`)
