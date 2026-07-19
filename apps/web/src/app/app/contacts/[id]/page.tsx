@@ -63,7 +63,7 @@ function describeActivity(activity: Activity): string {
     return `Estado cambiado de ${fromLabel} a ${toLabel}`
   }
   if (activity.type === 'note') return activity.content ?? ''
-  return 'Contacto actualizado'
+  return activity.content ?? 'Contacto actualizado'
 }
 
 export default function ContactDetailPage() {

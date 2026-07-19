@@ -302,6 +302,23 @@
   align-items: flex-end;
 }
 
+.bulk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+
+.bulk-toolbar-count {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
 .inline-field {
   display: flex;
   flex-direction: column;

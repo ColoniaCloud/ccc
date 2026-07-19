@@ -54,6 +54,12 @@ export default function ContactsPage() {
   const [sort, setSort]               = useState('createdAt_desc')
   const [page, setPage]               = useState(1)
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkStatus, setBulkStatus]   = useState<ContactStatus | ''>('')
+  const [bulkTagId, setBulkTagId]     = useState('')
+  const [bulkBusy, setBulkBusy]       = useState(false)
+  const [bulkError, setBulkError]     = useState<string | null>(null)
+
   useEffect(() => {
     apiFetch('/api/tags')
       .then((res) => res.json())
@@ -84,6 +90,7 @@ export default function ContactsPage() {
     const data = await res.json() as { items: Contact[]; total: number }
     setContacts(data.items)
     setTotal(data.total)
+    setSelectedIds(new Set())
   }
 
   useEffect(() => {
@@ -128,6 +135,81 @@ export default function ContactsPage() {
     await loadContacts()
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    if (!contacts) return
+    setSelectedIds((prev) => {
+      const allSelected = contacts.length > 0 && contacts.every((c) => prev.has(c.id))
+      return allSelected ? new Set() : new Set(contacts.map((c) => c.id))
+    })
+  }
+
+  async function handleBulkStatus() {
+    if (!bulkStatus || selectedIds.size === 0) return
+    setBulkBusy(true)
+    setBulkError(null)
+    try {
+      const res = await apiFetch('/api/contacts/bulk', {
+        method: 'PATCH',
+        body: JSON.stringify({ ids: Array.from(selectedIds), status: bulkStatus }),
+      })
+      if (!res.ok) throw new Error('No se pudo cambiar el estado de los contactos seleccionados')
+      setBulkStatus('')
+      await loadContacts()
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : 'No se pudo cambiar el estado')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
+  async function handleBulkAddTag() {
+    if (!bulkTagId || selectedIds.size === 0) return
+    setBulkBusy(true)
+    setBulkError(null)
+    try {
+      const res = await apiFetch('/api/contacts/bulk', {
+        method: 'PATCH',
+        body: JSON.stringify({ ids: Array.from(selectedIds), addTagId: bulkTagId }),
+      })
+      if (!res.ok) throw new Error('No se pudo agregar la etiqueta a los contactos seleccionados')
+      setBulkTagId('')
+      await loadContacts()
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : 'No se pudo agregar la etiqueta')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return
+    if (!window.confirm(`¿Eliminar ${selectedIds.size} contacto(s)? Esta acción no se puede deshacer.`)) return
+
+    setBulkBusy(true)
+    setBulkError(null)
+    try {
+      const res = await apiFetch('/api/contacts/bulk', {
+        method: 'DELETE',
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      })
+      if (!res.ok) throw new Error('No se pudieron eliminar los contactos seleccionados')
+      await loadContacts()
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : 'No se pudieron eliminar los contactos')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
@@ -137,6 +219,7 @@ export default function ContactsPage() {
           <h1>Contactos</h1>
           <p>Leads, prospectos y clientes de tu organización.</p>
         </div>
+        <Link href="/app/contacts/import" className="btn-ghost">Importar CSV</Link>
       </div>
 
       <div className="panel">
@@ -243,10 +326,56 @@ export default function ContactsPage() {
           </p>
         ) : (
           <>
+            {selectedIds.size > 0 && (
+              <div className="bulk-toolbar">
+                <span className="bulk-toolbar-count">
+                  {selectedIds.size} seleccionado{selectedIds.size === 1 ? '' : 's'}
+                </span>
+                <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as ContactStatus | '')}>
+                  <option value="">Cambiar estado a…</option>
+                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+                <button className="btn-ghost" disabled={!bulkStatus || bulkBusy} onClick={handleBulkStatus}>
+                  Aplicar
+                </button>
+
+                {allTags.length > 0 && (
+                  <>
+                    <select value={bulkTagId} onChange={(e) => setBulkTagId(e.target.value)}>
+                      <option value="">Agregar etiqueta…</option>
+                      {allTags.map((tag) => (
+                        <option key={tag.id} value={tag.id}>{tag.name}</option>
+                      ))}
+                    </select>
+                    <button className="btn-ghost" disabled={!bulkTagId || bulkBusy} onClick={handleBulkAddTag}>
+                      Agregar
+                    </button>
+                  </>
+                )}
+
+                <button className="link-danger" disabled={bulkBusy} onClick={handleBulkDelete}>
+                  Eliminar seleccionados
+                </button>
+              </div>
+            )}
+
+            {bulkError && (
+              <div className="form-error" style={{ marginBottom: 'var(--spacing-3)' }}>{bulkError}</div>
+            )}
+
             <div className="table-wrap">
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th style={{ width: '2rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={contacts.length > 0 && contacts.every((c) => selectedIds.has(c.id))}
+                        onChange={toggleSelectAll}
+                      />
+                    </th>
                     <th>Nombre</th>
                     <th>Empresa</th>
                     <th>Email</th>
@@ -259,6 +388,13 @@ export default function ContactsPage() {
                 <tbody>
                   {contacts.map((contact) => (
                     <tr key={contact.id}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(contact.id)}
+                          onChange={() => toggleSelect(contact.id)}
+                        />
+                      </td>
                       <td><Link href={`/app/contacts/${contact.id}`}>{contact.name}</Link></td>
                       <td>{contact.companyName ?? '—'}</td>
                       <td>{contact.email ?? '—'}</td>

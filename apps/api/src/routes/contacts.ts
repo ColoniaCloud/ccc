@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
+import { randomUUID } from 'node:crypto'
 import { eq, and, or, asc, desc, ilike, sql, inArray } from 'drizzle-orm'
 import { db } from '../db'
 import { contacts, tags, contactTags, customFieldDefinitions, contactActivities } from '../db/schema'
@@ -8,9 +9,12 @@ import { tenantMiddleware } from '../middleware/tenant'
 import type { HonoVariables } from '../types'
 import type { ContactStatus } from '@crm/shared'
 import { validateCustomFieldsPatch } from '../contacts/custom-fields-validation'
-import { logActivity } from '../contacts/activity-log'
+import { logActivity, logActivities } from '../contacts/activity-log'
+import { matchStatus, dedupeImportRows, type ImportRowInput } from '../contacts/csv-import'
 
 const CONTACT_STATUSES: ContactStatus[] = ['lead', 'prospect', 'client', 'inactive']
+const MAX_BULK_IDS = 500
+const MAX_IMPORT_ROWS = 500
 
 type ContactBody = Partial<{
   name: string
@@ -104,6 +108,287 @@ contactsRoutes.get('/', async (c) => {
   const items = rows.map((r) => ({ ...r, tags: tagsByContact.get(r.id) ?? [] }))
 
   return c.json({ status: 'ok', items, total: count, page, pageSize })
+})
+
+// Rutas literales /bulk deben registrarse antes de /:id para que el router
+// no confunda "bulk" con un id de contacto.
+contactsRoutes.patch('/bulk', async (c) => {
+  const tenantId = c.get('tenantId')
+  const memberId = c.get('memberId')
+
+  const body = await c.req.json().catch(() => null) as {
+    ids?: string[]
+    status?: ContactStatus
+    addTagId?: string
+  } | null
+
+  const ids = Array.isArray(body?.ids) ? [...new Set(body.ids)] : []
+  if (ids.length === 0) {
+    throw new HTTPException(400, { message: 'Seleccioná al menos un contacto' })
+  }
+  if (ids.length > MAX_BULK_IDS) {
+    throw new HTTPException(400, { message: `No se pueden editar más de ${MAX_BULK_IDS} contactos a la vez` })
+  }
+
+  const status   = body?.status && CONTACT_STATUSES.includes(body.status) ? body.status : undefined
+  const addTagId = body?.addTagId
+  if (!status && !addTagId) {
+    throw new HTTPException(400, { message: 'Especificá un estado o una etiqueta a aplicar' })
+  }
+
+  const existingContacts = await db.query.contacts.findMany({
+    where: and(eq(contacts.tenantId, tenantId), inArray(contacts.id, ids)),
+  })
+  if (existingContacts.length === 0) {
+    throw new HTTPException(404, { message: 'Ningún contacto válido encontrado' })
+  }
+  const validIds = existingContacts.map((row) => row.id)
+
+  if (status) {
+    await db.update(contacts).set({ status, updatedAt: new Date() })
+      .where(and(eq(contacts.tenantId, tenantId), inArray(contacts.id, validIds)))
+
+    await logActivities(
+      existingContacts
+        .filter((row) => row.status !== status)
+        .map((row) => ({
+          tenantId, contactId: row.id, memberId,
+          type: 'status_change' as const,
+          metadata: { from: row.status, to: status },
+        })),
+    )
+  }
+
+  if (addTagId) {
+    const tag = await db.query.tags.findFirst({
+      where: and(eq(tags.id, addTagId), eq(tags.tenantId, tenantId)),
+    })
+    if (!tag) {
+      throw new HTTPException(404, { message: 'Etiqueta no encontrada' })
+    }
+
+    await db.insert(contactTags)
+      .values(validIds.map((id) => ({ contactId: id, tagId: addTagId })))
+      .onConflictDoNothing()
+
+    await logActivities(
+      validIds.map((id) => ({
+        tenantId, contactId: id, memberId,
+        type: 'updated' as const,
+        content: `Etiqueta agregada: ${tag.name}`,
+      })),
+    )
+  }
+
+  return c.json({ status: 'ok', updated: validIds.length })
+})
+
+contactsRoutes.delete('/bulk', async (c) => {
+  const tenantId = c.get('tenantId')
+
+  const body = await c.req.json().catch(() => null) as { ids?: string[] } | null
+  const ids  = Array.isArray(body?.ids) ? [...new Set(body.ids)] : []
+
+  if (ids.length === 0) {
+    throw new HTTPException(400, { message: 'Seleccioná al menos un contacto' })
+  }
+  if (ids.length > MAX_BULK_IDS) {
+    throw new HTTPException(400, { message: `No se pueden eliminar más de ${MAX_BULK_IDS} contactos a la vez` })
+  }
+
+  const existingContacts = await db.query.contacts.findMany({
+    where: and(eq(contacts.tenantId, tenantId), inArray(contacts.id, ids)),
+  })
+  if (existingContacts.length === 0) {
+    throw new HTTPException(404, { message: 'Ningún contacto válido encontrado' })
+  }
+  const validIds = existingContacts.map((row) => row.id)
+
+  await db.delete(contacts).where(and(eq(contacts.tenantId, tenantId), inArray(contacts.id, validIds)))
+
+  return c.json({ status: 'ok', deleted: validIds.length })
+})
+
+contactsRoutes.post('/import', async (c) => {
+  const tenantId = c.get('tenantId')
+  const memberId = c.get('memberId')
+
+  const body     = await c.req.json().catch(() => null) as { rows?: ImportRowInput[] } | null
+  const rawRows  = Array.isArray(body?.rows) ? body.rows : []
+
+  if (rawRows.length === 0) {
+    throw new HTTPException(400, { message: 'El archivo no tiene filas para importar' })
+  }
+  if (rawRows.length > MAX_IMPORT_ROWS) {
+    throw new HTTPException(400, { message: `No se pueden importar más de ${MAX_IMPORT_ROWS} filas a la vez` })
+  }
+
+  const { rows: dedupedRows, skipped: dedupeSkipped } = dedupeImportRows(rawRows)
+  const skipped: { row: number; error: string }[] = [...dedupeSkipped]
+
+  const definitions = await getContactFieldDefinitions(tenantId)
+
+  // Una sola query trae los posibles matches de email para todas las filas.
+  const emails = [...new Set(
+    dedupedRows.map((r) => r.email?.trim().toLowerCase()).filter((e): e is string => !!e),
+  )]
+  const existingByEmail = new Map<string, (typeof contacts.$inferSelect)[]>()
+  if (emails.length > 0) {
+    const matches = await db.select().from(contacts)
+      .where(and(eq(contacts.tenantId, tenantId), inArray(sql`lower(${contacts.email})`, emails)))
+    for (const row of matches) {
+      const key  = row.email!.trim().toLowerCase()
+      const list = existingByEmail.get(key) ?? []
+      list.push(row)
+      existingByEmail.set(key, list)
+    }
+  }
+
+  // Mapa de tags por nombre (minúsculas), creando los que falten en un solo insert.
+  const tenantTags = await db.query.tags.findMany({ where: eq(tags.tenantId, tenantId) })
+  const tagByName  = new Map(tenantTags.map((t) => [t.name.toLowerCase(), t]))
+
+  const requestedTagNames = new Set<string>()
+  for (const row of dedupedRows) {
+    for (const name of row.tagNames ?? []) {
+      const trimmed = name.trim()
+      if (trimmed) requestedTagNames.add(trimmed)
+    }
+  }
+  const missingTagNames = [...requestedTagNames].filter((name) => !tagByName.has(name.toLowerCase()))
+  if (missingTagNames.length > 0) {
+    await db.insert(tags).values(missingTagNames.map((name) => ({ tenantId, name }))).onConflictDoNothing()
+    const refreshed = await db.query.tags.findMany({ where: eq(tags.tenantId, tenantId) })
+    tagByName.clear()
+    for (const t of refreshed) tagByName.set(t.name.toLowerCase(), t)
+  }
+
+  type ToInsertRow = { row: number; id: string; values: typeof contacts.$inferInsert; tagIds: string[] }
+  type ToUpdateRow = { row: number; id: string; values: Record<string, unknown>; tagIds: string[] }
+
+  const toInsert: ToInsertRow[] = []
+  const toUpdate: ToUpdateRow[] = []
+
+  for (const row of dedupedRows) {
+    const name = row.name?.trim()
+    if (!name) {
+      skipped.push({ row: row.row, error: 'Falta el nombre' })
+      continue
+    }
+
+    const customFieldsResult = validateCustomFieldsPatch(definitions, row.customFields ?? {})
+    if (!customFieldsResult.valid) {
+      skipped.push({ row: row.row, error: customFieldsResult.error })
+      continue
+    }
+
+    const status = matchStatus(row.status)
+    const tagIds = (row.tagNames ?? [])
+      .map((n) => tagByName.get(n.trim().toLowerCase())?.id)
+      .filter((id): id is string => !!id)
+
+    const email   = row.email?.trim().toLowerCase()
+    const matches = email ? existingByEmail.get(email) : undefined
+
+    if (matches && matches.length > 1) {
+      skipped.push({ row: row.row, error: 'email ambiguo: coincide con más de un contacto existente' })
+      continue
+    }
+
+    if (matches && matches.length === 1) {
+      const existing = matches[0]
+      if (!existing) continue
+      toUpdate.push({
+        row: row.row,
+        id:  existing.id,
+        values: {
+          name,
+          email:        row.email!.trim(),
+          phone:        row.phone?.trim() || existing.phone,
+          companyName:  row.companyName?.trim() || existing.companyName,
+          ...(status ? { status } : {}),
+          customFields: { ...existing.customFields, ...customFieldsResult.values },
+          updatedAt:    new Date(),
+        },
+        tagIds,
+      })
+    } else {
+      const id = randomUUID()
+      toInsert.push({
+        row: row.row,
+        id,
+        values: {
+          id,
+          tenantId,
+          name,
+          email:        row.email?.trim() || null,
+          phone:        row.phone?.trim() || null,
+          companyName:  row.companyName?.trim() || null,
+          status:       status ?? 'lead',
+          customFields: customFieldsResult.values,
+        },
+        tagIds,
+      })
+    }
+  }
+
+  if (toInsert.length > 0) {
+    await db.insert(contacts).values(toInsert.map((r) => r.values))
+  }
+
+  // Los updates se procesan en chunks secuenciales con Promise.allSettled — un fallo
+  // individual no aborta el resto ni obliga a reportar todo el import como un error.
+  const CHUNK_SIZE = 25
+  const successfulUpdateIds = new Set<string>()
+  for (let i = 0; i < toUpdate.length; i += CHUNK_SIZE) {
+    const chunk = toUpdate.slice(i, i + CHUNK_SIZE)
+    const results = await Promise.allSettled(
+      chunk.map((r) => db.update(contacts).set(r.values)
+        .where(and(eq(contacts.id, r.id), eq(contacts.tenantId, tenantId)))),
+    )
+    results.forEach((result, idx) => {
+      const r = chunk[idx]
+      if (!r) return
+      if (result.status === 'fulfilled') {
+        successfulUpdateIds.add(r.id)
+      } else {
+        skipped.push({ row: r.row, error: 'No se pudo actualizar el contacto' })
+      }
+    })
+  }
+
+  // Asignación de tags — agrega, no reemplaza los que el contacto ya tenía.
+  const tagAssignments: { contactId: string; tagId: string }[] = []
+  for (const r of toInsert) {
+    for (const tagId of r.tagIds) tagAssignments.push({ contactId: r.id, tagId })
+  }
+  for (const r of toUpdate) {
+    if (successfulUpdateIds.has(r.id)) {
+      for (const tagId of r.tagIds) tagAssignments.push({ contactId: r.id, tagId })
+    }
+  }
+  if (tagAssignments.length > 0) {
+    await db.insert(contactTags).values(tagAssignments).onConflictDoNothing()
+  }
+
+  await logActivities([
+    ...toInsert.map((r) => ({
+      tenantId, contactId: r.id, memberId, type: 'created' as const,
+    })),
+    ...toUpdate
+      .filter((r) => successfulUpdateIds.has(r.id))
+      .map((r) => ({
+        tenantId, contactId: r.id, memberId, type: 'updated' as const,
+        content: 'Actualizado por importación CSV',
+      })),
+  ])
+
+  return c.json({
+    status:  'ok',
+    created: toInsert.length,
+    updated: successfulUpdateIds.size,
+    skipped,
+  }, 201)
 })
 
 contactsRoutes.get('/:id', async (c) => {

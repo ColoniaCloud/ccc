@@ -2,20 +2,31 @@ import { db } from '../db'
 import { contactActivities } from '../db/schema'
 import type { ActivityType } from '../db/schema/contact-activities'
 
-export async function logActivity(params: {
+type ActivityParams = {
   tenantId: string
   contactId: string
   memberId?: string | null
   type: ActivityType
   content?: string | null
   metadata?: Record<string, unknown> | null
-}) {
-  await db.insert(contactActivities).values({
+}
+
+export async function logActivity(params: ActivityParams) {
+  await db.insert(contactActivities).values(toRow(params))
+}
+
+export async function logActivities(rows: ActivityParams[]) {
+  if (rows.length === 0) return
+  await db.insert(contactActivities).values(rows.map(toRow))
+}
+
+function toRow(params: ActivityParams) {
+  return {
     tenantId:  params.tenantId,
     contactId: params.contactId,
     memberId:  params.memberId ?? null,
     type:      params.type,
     content:   params.content ?? null,
     metadata:  params.metadata ?? null,
-  })
+  }
 }
