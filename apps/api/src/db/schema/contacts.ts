@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, uuid, jsonb } from 'drizzle-orm/pg-core'
 import { tenants } from './tenants'
 import type { ContactStatus } from '@crm/shared'
 
@@ -11,6 +11,7 @@ export const contacts = pgTable('contacts', {
   companyName: text('company_name'),
   status: text('status').notNull().default('lead').$type<ContactStatus>(),
   notes: text('notes'),
+  customFields: jsonb('custom_fields').$type<Record<string, string | number | boolean | null>>().notNull().default({}),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

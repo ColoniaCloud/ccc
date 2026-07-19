@@ -1,0 +1,122 @@
+.settings-shell {
+  display: flex;
+  gap: var(--spacing-8);
+  align-items: flex-start;
+}
+
+.settings-nav {
+  flex: 0 0 180px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.settings-nav-link {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.settings-nav-link:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.settings-nav-link.active {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+
+.settings-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+/* ── Módulos ─────────────────────────────────────────────────── */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-4);
+}
+
+@media (max-width: 640px) {
+  .module-grid { grid-template-columns: 1fr; }
+}
+
+.module-card {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.module-card.enabled {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent) inset;
+}
+
+.module-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+
+.module-name {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.module-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.module-toggle {
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border-strong);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
+}
+
+.module-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+  transition: transform var(--duration) var(--ease), background var(--duration) var(--ease);
+}
+
+.module-toggle.on {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.module-toggle.on::after {
+  transform: translateX(18px);
+  background: var(--color-text-on-accent);
+}
+
+.module-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

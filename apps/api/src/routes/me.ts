@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db } from '../db'
-import { tenants, members } from '../db/schema'
+import { tenants, members, tenantModules } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
 import type { HonoVariables } from '../types'
@@ -21,6 +21,10 @@ meRoutes.get('/', authMiddleware, tenantMiddleware, async (c) => {
     where: eq(members.id, memberId),
   })
 
+  const enabledModules = await db.query.tenantModules.findMany({
+    where: eq(tenantModules.tenantId, tenantId),
+  })
+
   return c.json({
     status: 'ok',
     user: {
@@ -29,10 +33,11 @@ meRoutes.get('/', authMiddleware, tenantMiddleware, async (c) => {
       email: user.email,
     },
     tenant: {
-      id:   tenant?.id,
-      name: tenant?.name,
-      slug: tenant?.slug,
-      plan: tenant?.plan,
+      id:      tenant?.id,
+      name:    tenant?.name,
+      slug:    tenant?.slug,
+      plan:    tenant?.plan,
+      modules: enabledModules.map((m) => m.moduleKey),
     },
     member: {
       id:   member?.id,

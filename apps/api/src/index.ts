@@ -11,6 +11,9 @@ import { pipelinesRoutes } from './routes/pipelines'
 import { dealsRoutes } from './routes/deals'
 import { tasksRoutes } from './routes/tasks'
 import { billingRoutes } from './routes/billing'
+import { modulesRoutes } from './routes/modules'
+import { tagsRoutes } from './routes/tags'
+import { customFieldsRoutes } from './routes/custom-fields'
 
 const app = new Hono()
 
@@ -44,6 +47,9 @@ app.route('/api/pipelines', pipelinesRoutes)
 app.route('/api/deals', dealsRoutes)
 app.route('/api/tasks', tasksRoutes)
 app.route('/api/billing', billingRoutes)
+app.route('/api/modules', modulesRoutes)
+app.route('/api/tags', tagsRoutes)
+app.route('/api/custom-fields', customFieldsRoutes)
 
 const port = Number(process.env.PORT) || 3001
 console.log(`API corriendo en http://localhost:${port}`)

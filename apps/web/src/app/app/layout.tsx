@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession, signOut } from '@/lib/auth'
+import type { ModuleKey } from '@crm/shared'
 import { AppProvider, type Me } from './app-context'
 import './app.css'
 
@@ -13,12 +14,15 @@ type StatusResponse =
   | { status: 'pending' }
   | { status: 'completed'; tenant: { id: string; name: string; slug: string } | null }
 
-const NAV_ITEMS = [
-  { href: '/app',          label: 'Resumen' },
-  { href: '/app/contacts', label: 'Contactos' },
-  { href: '/app/pipeline', label: 'Pipeline' },
-  { href: '/app/tasks',    label: 'Tareas' },
-  { href: '/app/billing',  label: 'Facturación' },
+// moduleKey opcional: un nav item con moduleKey solo se muestra si el tenant
+// tiene ese módulo activo (me.tenant.modules). Sin moduleKey, siempre visible.
+const NAV_ITEMS: { href: string; label: string; moduleKey?: ModuleKey }[] = [
+  { href: '/app',            label: 'Resumen' },
+  { href: '/app/contacts',   label: 'Contactos' },
+  { href: '/app/pipeline',   label: 'Pipeline' },
+  { href: '/app/tasks',      label: 'Tareas' },
+  { href: '/app/billing',    label: 'Facturación' },
+  { href: '/app/settings',   label: 'Configuración' },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -94,15 +98,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span>Plata</span>
           </div>
           <nav className="app-nav">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`app-nav-link${pathname === item.href ? ' active' : ''}`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {NAV_ITEMS
+              .filter((item) => !item.moduleKey || me.tenant.modules.includes(item.moduleKey))
+              .map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`app-nav-link${pathname === item.href ? ' active' : ''}`}
+                >
+                  {item.label}
+                </Link>
+              ))}
           </nav>
         </aside>
 

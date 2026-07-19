@@ -24,3 +24,9 @@ export interface PaginatedResponse<T> {
 export type ContactStatus = 'lead' | 'prospect' | 'client' | 'inactive'
 
 export type DealCurrency = 'USD' | 'UYU' | 'ARS' | 'CLP' | 'BRL'
+
+export type ModuleKey = 'stock' | 'service_periods'
+
+export type CustomFieldType = 'text' | 'number' | 'date' | 'boolean' | 'select'
+
+export type CustomFieldEntityType = 'contact'
