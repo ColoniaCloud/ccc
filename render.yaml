@@ -70,3 +70,8 @@ services:
       # URL pública del servicio crm-api de arriba (con https://).
       - key: NEXT_PUBLIC_API_URL
         sync: false
+      # Dominios (separados por coma, sin protocolo, ej. "colonia.cloud,www.colonia.cloud")
+      # que muestran la landing pública en "/" en vez del CRM. Opcional — sin
+      # definir, "/" sigue yendo directo al login como hoy.
+      - key: MARKETING_HOSTS
+        sync: false

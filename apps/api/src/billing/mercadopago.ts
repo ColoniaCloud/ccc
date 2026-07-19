@@ -35,7 +35,7 @@ export async function createMercadoPagoSubscription(params: {
 
   const response = await preApprovalClient.create({
     body: {
-      reason:             `ColoniaCloud CRM — plan ${params.plan}`,
+      reason:             `Plata — plan ${params.plan}`,
       external_reference: `${params.tenantId}:${params.plan}`,
       payer_email:        params.payerEmail,
       back_url:           params.backUrl,

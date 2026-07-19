@@ -90,7 +90,7 @@ export async function ensureNowPaymentsPlan(plan: PayablePlan, ipnCallbackUrl: s
   const created = await nowRequestAuthed<NowPlanResponse>('/subscriptions/plans', {
     method: 'POST',
     body: JSON.stringify({
-      title:            `ColoniaCloud CRM — ${catalog.label}`,
+      title:            `Plata — ${catalog.label}`,
       interval_day:     30,
       amount:           catalog.priceUsd,
       currency:         'usd',

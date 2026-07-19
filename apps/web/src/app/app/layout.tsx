@@ -91,7 +91,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <aside className="app-sidebar">
           <div className="app-brand">
             <span className="app-brand-dot" />
-            <span>ColoniaCloud CRM</span>
+            <span>Plata</span>
           </div>
           <nav className="app-nav">
             {NAV_ITEMS.map((item) => (

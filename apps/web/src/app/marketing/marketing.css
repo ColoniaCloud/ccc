@@ -1,0 +1,309 @@
+.mkt {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Nav ─────────────────────────────────────────────────────── */
+.mkt-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--spacing-6) var(--spacing-6) 0;
+}
+
+.mkt-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mkt-brand-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
+
+.mkt-nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.mkt-nav-links a {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.mkt-nav-links a:hover {
+  color: var(--color-text);
+}
+
+.mkt-nav-cta {
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-accent);
+  color: var(--color-text-on-accent) !important;
+  border-radius: var(--radius);
+}
+
+.mkt-nav-cta:hover {
+  background: var(--color-accent-hover);
+  color: var(--color-text-on-accent) !important;
+}
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.mkt-hero {
+  max-width: 780px;
+  margin: 0 auto;
+  width: 100%;
+  padding: var(--spacing-20) var(--spacing-6) var(--spacing-16);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+
+.mkt-eyebrow {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+}
+
+.mkt-hero h1 {
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
+  color: var(--color-text);
+}
+
+.mkt-hero p {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  max-width: 52ch;
+  line-height: var(--line-height-relaxed);
+}
+
+.mkt-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mkt-btn {
+  padding: var(--spacing-3) var(--spacing-6);
+  border-radius: var(--radius);
+  font-size: var(--font-size);
+  font-weight: var(--font-weight-medium);
+  transition: background var(--duration) var(--ease), border-color var(--duration) var(--ease);
+}
+
+.mkt-btn-primary {
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+.mkt-btn-primary:hover {
+  background: var(--color-accent-hover);
+  color: var(--color-text-on-accent);
+}
+
+.mkt-btn-ghost {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.mkt-btn-ghost:hover {
+  background: var(--color-hover);
+}
+
+/* ── Secciones ───────────────────────────────────────────────── */
+.mkt-section {
+  max-width: 1080px;
+  margin: 0 auto;
+  width: 100%;
+  padding: var(--spacing-16) var(--spacing-6);
+}
+
+.mkt-section-head {
+  text-align: center;
+  max-width: 56ch;
+  margin: 0 auto var(--spacing-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.mkt-section-head h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.mkt-section-head p {
+  font-size: var(--font-size);
+  color: var(--color-text-secondary);
+}
+
+/* ── Features ────────────────────────────────────────────────── */
+.mkt-features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-4);
+}
+
+@media (max-width: 900px) {
+  .mkt-features { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .mkt-features { grid-template-columns: 1fr; }
+}
+
+.mkt-feature {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.mkt-feature-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+
+.mkt-feature h3 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mkt-feature p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* ── Pricing ─────────────────────────────────────────────────── */
+.mkt-pricing {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-4);
+}
+
+@media (max-width: 1000px) {
+  .mkt-pricing { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 640px) {
+  .mkt-pricing { grid-template-columns: 1fr 1fr; }
+}
+
+.mkt-price-card {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.mkt-price-card.featured {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent) inset;
+}
+
+.mkt-price-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mkt-price-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.mkt-price-value small {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-tertiary);
+}
+
+/* ── Pagos ───────────────────────────────────────────────────── */
+.mkt-payments {
+  display: flex;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mkt-payment-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: var(--spacing-2) var(--spacing-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── CTA final ───────────────────────────────────────────────── */
+.mkt-cta {
+  text-align: center;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-12) var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.mkt-cta h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.mkt-footer {
+  border-top: 1px solid var(--color-border);
+  padding: var(--spacing-6);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
