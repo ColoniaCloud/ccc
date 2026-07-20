@@ -17,12 +17,57 @@
 .app-sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-8);
   padding: var(--spacing-6) var(--spacing-4);
   background: var(--color-surface-1);
-  border-right: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  transition: width var(--duration) var(--ease),
+              padding var(--duration) var(--ease),
+              border-color var(--duration) var(--ease);
+}
+
+.app-sidebar--collapsed {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-left-color: transparent;
+}
+
+.app-sidebar-toggle {
+  position: fixed;
+  top: 50%;
+  right: var(--sidebar-width);
+  transform: translate(50%, -50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-1);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 20;
+  transition: right var(--duration) var(--ease),
+              transform var(--duration) var(--ease),
+              background var(--duration) var(--ease),
+              color var(--duration) var(--ease);
+}
+
+.app-sidebar-toggle:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.app-sidebar-toggle--collapsed {
+  right: 0;
+  transform: translate(0, -50%);
 }
 
 .app-brand {

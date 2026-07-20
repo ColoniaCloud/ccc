@@ -32,6 +32,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const [me, setMe]           = useState<Me | null>(null)
   const [loading, setLoading] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem('plata:sidebar-collapsed') === '1'
+  })
+
+  function toggleSidebar() {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      window.localStorage.setItem('plata:sidebar-collapsed', next ? '1' : '0')
+      return next
+    })
+  }
 
   useEffect(() => {
     if (sessionLoading) return
@@ -92,7 +104,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppProvider me={me}>
       <div className="app-shell app-shell--with-sidebar">
-        <aside className="app-sidebar">
+        <div className="app-content">
+          <header className="app-header">
+            <span className="app-tenant">{me.tenant.name}</span>
+            <button className="app-signout" onClick={handleSignOut}>Cerrar sesión</button>
+          </header>
+
+          <main className="app-main app-main--scroll">
+            {children}
+          </main>
+        </div>
+
+        <aside className={`app-sidebar${sidebarCollapsed ? ' app-sidebar--collapsed' : ''}`}>
           <div className="app-brand">
             <span className="app-brand-dot" />
             <span>Plata</span>
@@ -112,16 +135,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
 
-        <div className="app-content">
-          <header className="app-header">
-            <span className="app-tenant">{me.tenant.name}</span>
-            <button className="app-signout" onClick={handleSignOut}>Cerrar sesión</button>
-          </header>
-
-          <main className="app-main app-main--scroll">
-            {children}
-          </main>
-        </div>
+        <button
+          type="button"
+          className={`app-sidebar-toggle${sidebarCollapsed ? ' app-sidebar-toggle--collapsed' : ''}`}
+          onClick={toggleSidebar}
+          aria-label={sidebarCollapsed ? 'Mostrar barra lateral' : 'Ocultar barra lateral'}
+          aria-pressed={sidebarCollapsed}
+        >
+          {sidebarCollapsed ? '‹' : '›'}
+        </button>
       </div>
     </AppProvider>
   )
