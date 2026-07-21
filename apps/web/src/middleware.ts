@@ -5,9 +5,11 @@ import type { NextRequest } from 'next/server'
 // Todavía no está definido el dominio final del producto, así que esto
 // vive en una env var — sin configurar, "/" sigue yendo directo al login
 // como hasta ahora (comportamiento actual sin cambios).
+// Se tolera que la env var venga con protocolo o slash final (error común
+// al pegar la URL completa desde el navegador) — se normaliza acá.
 const MARKETING_HOSTS = (process.env.MARKETING_HOSTS ?? '')
   .split(',')
-  .map((host) => host.trim())
+  .map((host) => host.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, ''))
   .filter(Boolean)
 
 export function middleware(request: NextRequest) {
