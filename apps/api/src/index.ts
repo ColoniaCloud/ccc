@@ -14,6 +14,7 @@ import { billingRoutes } from './routes/billing'
 import { modulesRoutes } from './routes/modules'
 import { tagsRoutes } from './routes/tags'
 import { customFieldsRoutes } from './routes/custom-fields'
+import { contactRoutes } from './routes/contact'
 
 const app = new Hono()
 
@@ -50,6 +51,7 @@ app.route('/api/billing', billingRoutes)
 app.route('/api/modules', modulesRoutes)
 app.route('/api/tags', tagsRoutes)
 app.route('/api/custom-fields', customFieldsRoutes)
+app.route('/api/contact', contactRoutes)
 
 const port = Number(process.env.PORT) || 3001
 console.log(`API corriendo en http://localhost:${port}`)

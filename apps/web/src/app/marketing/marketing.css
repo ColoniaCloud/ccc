@@ -307,3 +307,93 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
+
+/* ── Módulos ─────────────────────────────────────────────────── */
+.mkt-modules {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-4);
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .mkt-modules { grid-template-columns: 1fr; }
+}
+
+.mkt-module-card h3 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mkt-badge-soon {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-tertiary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-full);
+}
+
+/* ── Formulario de contacto ──────────────────────────────────── */
+.mkt-form {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.mkt-form form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.mkt-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.mkt-form-field label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.mkt-form-field input,
+.mkt-form-field textarea {
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  outline: none;
+  resize: vertical;
+  transition: border-color var(--duration) var(--ease),
+              box-shadow   var(--duration) var(--ease);
+}
+
+.mkt-form-field input:focus,
+.mkt-form-field textarea:focus {
+  border-color: var(--color-border-focus);
+  box-shadow:   var(--focus-ring);
+}
+
+.mkt-form-error {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-danger-subtle);
+  border-radius: var(--radius);
+}
+
+.mkt-form-success {
+  font-size: var(--font-size);
+  color: var(--color-success);
+  background: var(--color-success-subtle);
+  padding: var(--spacing-4) var(--spacing-5);
+  border-radius: var(--radius);
+  text-align: center;
+}
