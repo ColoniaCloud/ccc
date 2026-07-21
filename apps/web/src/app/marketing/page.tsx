@@ -4,8 +4,13 @@ import './marketing.css'
 const FEATURES = [
   {
     icon: '◐',
-    title: 'Contactos',
-    desc: 'Cargá leads, prospectos y clientes en un solo lugar, sin plantillas complicadas ni configuración previa.',
+    title: 'Contactos a tu medida',
+    desc: 'Campos personalizados, etiquetas y búsqueda avanzada para organizar tu cartera como tu negocio la necesita.',
+  },
+  {
+    icon: '⬡',
+    title: 'Módulos por rubro',
+    desc: 'Activá solo las herramientas que usás: gestioná stock si vendés productos, o turnos si das servicios.',
   },
   {
     icon: '▤',
@@ -13,9 +18,14 @@ const FEATURES = [
     desc: 'Un tablero kanban simple: movés cada oportunidad de etapa según avanza la conversación.',
   },
   {
-    icon: '✓',
-    title: 'Tareas y seguimientos',
-    desc: 'Recordatorios con vencimiento para que ningún cliente quede esperando una respuesta.',
+    icon: '◷',
+    title: 'Historial completo',
+    desc: 'Línea de tiempo con cada cambio de estado, nota y actualización — nunca perdés el contexto de un contacto.',
+  },
+  {
+    icon: '⇧',
+    title: 'Carga masiva',
+    desc: 'Importá tu base de contactos desde un CSV en minutos, con detección de duplicados por email.',
   },
   {
     icon: '$',
