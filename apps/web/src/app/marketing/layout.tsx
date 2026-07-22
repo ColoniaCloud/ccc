@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Logo } from '@/components/Logo'
 import './marketing.css'
 
 const NAV_LINKS = [
@@ -13,9 +14,8 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
   return (
     <div className="mkt">
       <nav className="mkt-nav">
-        <Link href="/" className="mkt-brand">
-          <span className="mkt-brand-dot" />
-          Plata
+        <Link href="/" className="mkt-brand" aria-label="Plata — inicio">
+          <Logo height={30} priority />
         </Link>
         <div className="mkt-nav-links">
           {NAV_LINKS.map((item) => (

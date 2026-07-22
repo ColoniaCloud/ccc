@@ -17,18 +17,6 @@
   font-weight: var(--font-weight-medium);
 }
 
-.auth-brand-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  background: var(--color-accent);
-}
-
-.auth-brand-name {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
 .auth-card {
   width: 100%;
   max-width: 400px;

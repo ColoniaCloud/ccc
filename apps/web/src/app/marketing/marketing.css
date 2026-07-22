@@ -24,13 +24,6 @@
   color: var(--color-text);
 }
 
-.mkt-brand-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: var(--radius-full);
-  background: var(--color-accent);
-}
-
 .mkt-nav-links {
   display: flex;
   align-items: center;

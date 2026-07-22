@@ -80,13 +80,6 @@
   font-weight: var(--font-weight-medium);
 }
 
-.app-brand-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  background: var(--color-accent);
-}
-
 .app-nav {
   display: flex;
   flex-direction: column;

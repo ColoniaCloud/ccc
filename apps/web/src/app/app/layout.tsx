@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession, signOut } from '@/lib/auth'
+import { Logo } from '@/components/Logo'
 import type { ModuleKey } from '@crm/shared'
 import { AppProvider, type Me } from './app-context'
 import './app.css'
@@ -117,8 +118,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <aside className={`app-sidebar${sidebarCollapsed ? ' app-sidebar--collapsed' : ''}`}>
           <div className="app-brand">
-            <span className="app-brand-dot" />
-            <span>Plata</span>
+            <Logo height={26} />
           </div>
           <nav className="app-nav">
             {NAV_ITEMS

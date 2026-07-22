@@ -1,3 +1,12 @@
 /* Estilos globales de la app.
    Los estilos de componentes van en src/styles/components/
    Los tokens del sistema van en src/styles/theme.css        */
+
+/* Isologo de marca — el alto lo fija cada uso vía el componente <Logo />;
+   el ancho acompaña la proporción. `display: block` evita el hueco de
+   baseline que deja un <img> inline dentro de los headers. */
+.brand-logo {
+  display: block;
+  width: auto;
+  flex-shrink: 0;   /* que no se aplaste al colapsar el sidebar */
+}
