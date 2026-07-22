@@ -1,11 +1,35 @@
 .auth-shell {
   min-height: 100svh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 860px) {
+  .auth-shell { grid-template-columns: 1fr; }
+  .auth-visual { display: none; }
+}
+
+.auth-form-pane {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--spacing-6);
   gap: var(--spacing-6);
+}
+
+.auth-visual {
+  position: relative;
+  overflow: hidden;
+  background: #0a0a10;
+}
+
+.ground-background-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .auth-brand {

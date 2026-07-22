@@ -70,16 +70,6 @@
   transform: translate(0, -50%);
 }
 
-.app-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: 0 var(--spacing-2);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-}
-
 .app-nav {
   display: flex;
   flex-direction: column;
@@ -117,12 +107,17 @@
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--spacing-4);
+  justify-content: space-between;
   height: var(--header-height);
   padding: 0 var(--spacing-6);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface-1);
+}
+
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
 }
 
 .app-tenant {

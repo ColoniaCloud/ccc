@@ -15,7 +15,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
     <div className="mkt">
       <nav className="mkt-nav">
         <Link href="/" className="mkt-brand" aria-label="Plata — inicio">
-          <Logo height={30} priority />
+          <Logo height={36} priority />
         </Link>
         <div className="mkt-nav-links">
           {NAV_LINKS.map((item) => (

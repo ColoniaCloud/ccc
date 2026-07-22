@@ -107,8 +107,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="app-shell app-shell--with-sidebar">
         <div className="app-content">
           <header className="app-header">
-            <span className="app-tenant">{me.tenant.name}</span>
-            <button className="app-signout" onClick={handleSignOut}>Cerrar sesión</button>
+            <Logo height={32} priority />
+            <div className="app-header-right">
+              <span className="app-tenant">{me.tenant.name}</span>
+              <button className="app-signout" onClick={handleSignOut}>Cerrar sesión</button>
+            </div>
           </header>
 
           <main className="app-main app-main--scroll">
@@ -117,9 +120,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <aside className={`app-sidebar${sidebarCollapsed ? ' app-sidebar--collapsed' : ''}`}>
-          <div className="app-brand">
-            <Logo height={26} />
-          </div>
           <nav className="app-nav">
             {NAV_ITEMS
               .filter((item) => !item.moduleKey || me.tenant.modules.includes(item.moduleKey))
