@@ -26,7 +26,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3001/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -57,7 +57,11 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/auth/sign-in"]
+      # 127.0.0.1 explícito, no "localhost": Next con HOSTNAME=0.0.0.0
+      # bindea solo IPv4, y "localhost" en este contenedor resuelve
+      # primero a ::1 (IPv6) — con "localhost" el healthcheck falla
+      # siempre por conexión rechazada aunque el server esté sano.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/auth/sign-in"]
       interval: 30s
       timeout: 5s
       retries: 3
