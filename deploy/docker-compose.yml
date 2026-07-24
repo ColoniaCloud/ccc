@@ -1,0 +1,76 @@
+# Stack de producción para el VPS. Vive en un proyecto Compose aislado
+# (docker-apps_app-network es EXTERNA — este archivo no crea ni modifica
+# nada del stack compartido, solo se conecta a la red donde Traefik ya
+# escucha para que lo descubra vía labels).
+#
+# Los secrets (DATABASE_URL, BETTER_AUTH_SECRET, claves de MercadoPago/
+# NOWPayments, etc.) NO viven acá — se cargan desde un .env en este mismo
+# directorio en el servidor (gitignored, nunca se commitea), igual que hoy
+# vive apps/api/.env en local.
+services:
+  crm-api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    container_name: plata-api
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - WEB_URL=https://app.plata.studio
+      - API_PUBLIC_URL=https://api.plata.studio
+      - ALLOWED_ORIGINS=https://app.plata.studio,https://plata.studio,https://www.plata.studio
+      - COOKIE_DOMAIN=plata.studio
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.plata-api.rule=Host(`api.plata.studio`)"
+      - "traefik.http.routers.plata-api.entrypoints=websecure"
+      - "traefik.http.routers.plata-api.tls.certresolver=myresolver"
+      - "traefik.http.services.plata-api.loadbalancer.server.port=3001"
+      - "traefik.http.routers.plata-api.priority=20"
+
+  crm-web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://api.plata.studio
+    container_name: plata-web
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # Dominios donde "/" muestra la landing en vez de redirigir al login
+      # (ver apps/web/src/middleware.ts). app.plata.studio queda afuera a
+      # propósito — ahí "/" debe seguir yendo directo al CRM.
+      - MARKETING_HOSTS=plata.studio,www.plata.studio
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/auth/sign-in"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.plata-web.rule=Host(`plata.studio`) || Host(`www.plata.studio`) || Host(`app.plata.studio`)"
+      - "traefik.http.routers.plata-web.entrypoints=websecure"
+      - "traefik.http.routers.plata-web.tls.certresolver=myresolver"
+      - "traefik.http.services.plata-web.loadbalancer.server.port=3000"
+      - "traefik.http.routers.plata-web.priority=20"
+
+networks:
+  app-network:
+    external: true
+    name: docker-apps_app-network

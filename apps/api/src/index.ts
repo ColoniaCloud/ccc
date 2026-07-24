@@ -15,12 +15,15 @@ import { modulesRoutes } from './routes/modules'
 import { tagsRoutes } from './routes/tags'
 import { customFieldsRoutes } from './routes/custom-fields'
 import { contactRoutes } from './routes/contact'
+import { getAllowedOrigins } from './lib/origins'
 
 const app = new Hono()
 
+const allowedOrigins = getAllowedOrigins()
+
 app.use('*', logger())
 app.use('*', cors({
-  origin: process.env.WEB_URL ?? 'http://localhost:3000',
+  origin: (origin) => (origin && allowedOrigins.includes(origin) ? origin : undefined),
   credentials: true,
 }))
 

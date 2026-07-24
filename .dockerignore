@@ -1,12 +1,10 @@
 .git
 node_modules
 **/node_modules
-apps/web
 .env
 .env.local
 .env.production
 .turbo
 **/.next
-.fly
 **/dist
 *.log
