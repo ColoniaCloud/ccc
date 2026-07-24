@@ -25,6 +25,12 @@ RUN pnpm --filter @crm/web build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# El server.js de standalone lee HOSTNAME para decidir en qué interfaz
+# escuchar. Docker define HOSTNAME=<container id> por defecto — sin este
+# override, Next termina bindeando solo a la IP del contenedor en vez de
+# 0.0.0.0, y ni el healthcheck (127.0.0.1) ni nada fuera del propio
+# proceso puede conectarse.
+ENV HOSTNAME=0.0.0.0
 COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
