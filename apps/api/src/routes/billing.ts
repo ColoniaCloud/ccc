@@ -1,6 +1,10 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { eq, and, desc } from 'drizzle-orm'
+// `db` (owner, sin RLS) es a propósito acá: los webhooks de abajo escriben
+// billing_subscriptions/billing_events antes de que exista un tenant de
+// sesión — no pasan por tenantMiddleware. Las rutas autenticadas usan
+// `c.get('db')` (ver más abajo), acotado al tenant vía RLS.
 import { db } from '../db'
 import { tenants, members, billingSubscriptions, billingEvents } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
@@ -44,6 +48,7 @@ billingRoutes.get('/plans', (c) => {
 
 // ─── Estado de la suscripción del tenant actual ───────────────────
 billingRoutes.get('/status', authMiddleware, tenantMiddleware, async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
 
   const tenant = await db.query.tenants.findFirst({ where: eq(tenants.id, tenantId) })
@@ -71,6 +76,7 @@ billingRoutes.get('/status', authMiddleware, tenantMiddleware, async (c) => {
 
 // ─── Iniciar un checkout (MercadoPago o cripto) ───────────────────
 billingRoutes.post('/checkout', authMiddleware, tenantMiddleware, async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const memberId = c.get('memberId')
   const user     = c.get('user')
@@ -145,6 +151,7 @@ billingRoutes.post('/checkout', authMiddleware, tenantMiddleware, async (c) => {
 
 // ─── Cancelar la suscripción activa ───────────────────────────────
 billingRoutes.post('/cancel', authMiddleware, tenantMiddleware, async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const memberId = c.get('memberId')
 

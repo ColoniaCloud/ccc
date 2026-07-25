@@ -1,7 +1,8 @@
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import { db } from '../db'
+import { tenantDb } from '../db/tenant-db'
 import { tenants, members } from '../db/schema'
 import type { HonoVariables } from '../types'
 
@@ -49,5 +50,11 @@ export const tenantMiddleware = createMiddleware<{
   c.set('tenantId', tenant.id)
   c.set('memberId', member.id)
 
-  await next()
+  // set_config con is_local=true equivale a SET LOCAL pero acepta bind
+  // params — SET LOCAL no admite placeholders del protocolo de Postgres.
+  await tenantDb.transaction(async (tx) => {
+    await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenant.id}, true)`)
+    c.set('db', tx)
+    await next()
+  })
 })

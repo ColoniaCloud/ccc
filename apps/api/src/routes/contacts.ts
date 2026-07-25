@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { randomUUID } from 'node:crypto'
 import { eq, and, or, asc, desc, ilike, sql, inArray } from 'drizzle-orm'
-import { db } from '../db'
+import type { TenantTx } from '../db/tenant-db'
 import { contacts, tags, contactTags, customFieldDefinitions, contactActivities } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
@@ -26,7 +26,7 @@ type ContactBody = Partial<{
   customFields: Record<string, unknown>
 }>
 
-async function getContactFieldDefinitions(tenantId: string) {
+async function getContactFieldDefinitions(db: TenantTx, tenantId: string) {
   return db.query.customFieldDefinitions.findMany({
     where: and(eq(customFieldDefinitions.tenantId, tenantId), eq(customFieldDefinitions.entityType, 'contact')),
   })
@@ -37,6 +37,7 @@ const contactsRoutes = new Hono<{ Variables: HonoVariables }>()
 contactsRoutes.use('*', authMiddleware, tenantMiddleware)
 
 contactsRoutes.get('/', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
 
   const search   = c.req.query('search')?.trim()
@@ -113,6 +114,7 @@ contactsRoutes.get('/', async (c) => {
 // Rutas literales /bulk deben registrarse antes de /:id para que el router
 // no confunda "bulk" con un id de contacto.
 contactsRoutes.patch('/bulk', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const memberId = c.get('memberId')
 
@@ -148,7 +150,7 @@ contactsRoutes.patch('/bulk', async (c) => {
     await db.update(contacts).set({ status, updatedAt: new Date() })
       .where(and(eq(contacts.tenantId, tenantId), inArray(contacts.id, validIds)))
 
-    await logActivities(
+    await logActivities(db,
       existingContacts
         .filter((row) => row.status !== status)
         .map((row) => ({
@@ -171,7 +173,7 @@ contactsRoutes.patch('/bulk', async (c) => {
       .values(validIds.map((id) => ({ contactId: id, tagId: addTagId })))
       .onConflictDoNothing()
 
-    await logActivities(
+    await logActivities(db,
       validIds.map((id) => ({
         tenantId, contactId: id, memberId,
         type: 'updated' as const,
@@ -184,6 +186,7 @@ contactsRoutes.patch('/bulk', async (c) => {
 })
 
 contactsRoutes.delete('/bulk', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
 
   const body = await c.req.json().catch(() => null) as { ids?: string[] } | null
@@ -210,6 +213,7 @@ contactsRoutes.delete('/bulk', async (c) => {
 })
 
 contactsRoutes.post('/import', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const memberId = c.get('memberId')
 
@@ -226,7 +230,7 @@ contactsRoutes.post('/import', async (c) => {
   const { rows: dedupedRows, skipped: dedupeSkipped } = dedupeImportRows(rawRows)
   const skipped: { row: number; error: string }[] = [...dedupeSkipped]
 
-  const definitions = await getContactFieldDefinitions(tenantId)
+  const definitions = await getContactFieldDefinitions(db, tenantId)
 
   // Una sola query trae los posibles matches de email para todas las filas.
   const emails = [...new Set(
@@ -371,7 +375,7 @@ contactsRoutes.post('/import', async (c) => {
     await db.insert(contactTags).values(tagAssignments).onConflictDoNothing()
   }
 
-  await logActivities([
+  await logActivities(db, [
     ...toInsert.map((r) => ({
       tenantId, contactId: r.id, memberId, type: 'created' as const,
     })),
@@ -392,6 +396,7 @@ contactsRoutes.post('/import', async (c) => {
 })
 
 contactsRoutes.get('/:id', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const id       = c.req.param('id')
 
@@ -406,6 +411,7 @@ contactsRoutes.get('/:id', async (c) => {
 })
 
 contactsRoutes.get('/:id/tags', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const id       = c.req.param('id')
 
@@ -426,6 +432,7 @@ contactsRoutes.get('/:id/tags', async (c) => {
 })
 
 contactsRoutes.put('/:id/tags', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const id       = c.req.param('id')
 
@@ -458,6 +465,7 @@ contactsRoutes.put('/:id/tags', async (c) => {
 })
 
 contactsRoutes.post('/', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const memberId = c.get('memberId')
   const body = await c.req.json().catch(() => null) as ContactBody | null
@@ -471,7 +479,7 @@ contactsRoutes.post('/', async (c) => {
 
   let customFields: Record<string, string | number | boolean | null> = {}
   if (body?.customFields) {
-    const definitions = await getContactFieldDefinitions(tenantId)
+    const definitions = await getContactFieldDefinitions(db, tenantId)
     const result = validateCustomFieldsPatch(definitions, body.customFields)
     if (!result.valid) {
       throw new HTTPException(400, { message: result.error })
@@ -494,12 +502,13 @@ contactsRoutes.post('/', async (c) => {
     throw new HTTPException(500, { message: 'No se pudo crear el contacto' })
   }
 
-  await logActivity({ tenantId, contactId: contact.id, memberId, type: 'created' })
+  await logActivity(db, { tenantId, contactId: contact.id, memberId, type: 'created' })
 
   return c.json({ status: 'ok', item: contact }, 201)
 })
 
 contactsRoutes.patch('/:id', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const memberId = c.get('memberId')
   const id       = c.req.param('id')
@@ -524,7 +533,7 @@ contactsRoutes.patch('/:id', async (c) => {
   }
 
   if (body?.customFields !== undefined) {
-    const definitions = await getContactFieldDefinitions(tenantId)
+    const definitions = await getContactFieldDefinitions(db, tenantId)
     const result = validateCustomFieldsPatch(definitions, body.customFields)
     if (!result.valid) {
       throw new HTTPException(400, { message: result.error })
@@ -537,7 +546,7 @@ contactsRoutes.patch('/:id', async (c) => {
   const [updated] = await db.update(contacts).set(patch).where(eq(contacts.id, id)).returning()
 
   if (patch.status !== undefined && patch.status !== existing.status) {
-    await logActivity({
+    await logActivity(db, {
       tenantId, contactId: id, memberId,
       type: 'status_change',
       metadata: { from: existing.status, to: patch.status },
@@ -548,6 +557,7 @@ contactsRoutes.patch('/:id', async (c) => {
 })
 
 contactsRoutes.get('/:id/activities', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const id       = c.req.param('id')
 
@@ -567,6 +577,7 @@ contactsRoutes.get('/:id/activities', async (c) => {
 })
 
 contactsRoutes.post('/:id/activities', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const memberId = c.get('memberId')
   const id       = c.req.param('id')
@@ -592,6 +603,7 @@ contactsRoutes.post('/:id/activities', async (c) => {
 })
 
 contactsRoutes.delete('/:id', async (c) => {
+  const db = c.get('db')
   const tenantId = c.get('tenantId')
   const id       = c.req.param('id')
 
