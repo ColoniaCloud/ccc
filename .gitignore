@@ -10,9 +10,3 @@ dist/
 *.tsbuildinfo
 .claude/
 
-# Copias de cambios hechos directamente sobre el working tree de un
-# servidor, apartadas para que `git pull` no aborte pero sin perderlas.
-# Un archivo ya trackeado no se puede ignorar: hay que copiarlo a un
-# nombre .local y devolver el original con `git checkout --`.
-*.local
-

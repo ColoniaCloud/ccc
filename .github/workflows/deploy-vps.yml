@@ -23,7 +23,20 @@ jobs:
           script: |
             set -euo pipefail
             cd /opt/plata/app
-            git pull
+            # El working tree del servidor es descartable: nadie debería
+            # editar código acá. Un `git pull` aborta si alguien lo hizo
+            # (pasó con apps/api/src/routes/deals.ts y frenó el deploy
+            # entero), así que se fuerza el estado de origin/main. Lo que
+            # se descarta queda registrado en el log de Actions por el
+            # `git status` de abajo — se pierde el archivo, no la evidencia.
+            echo "── Estado local antes de descartarlo ──"
+            git status --short
+            git fetch origin
+            git reset --hard origin/main
+            # -fd borra archivos y directorios sin trackear. Sin -x a
+            # propósito: los ignorados sobreviven, y ahí vive deploy/.env
+            # con todos los secrets de producción.
+            git clean -fd
             cd deploy
             docker compose build
             # Migraciones antes del swap de contenedores: si fallan, el
