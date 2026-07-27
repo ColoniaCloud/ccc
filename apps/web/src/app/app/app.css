@@ -13,6 +13,17 @@
   font-size: var(--font-size-sm);
 }
 
+/* Estado terminal del layout: la cuenta no se pudo cargar (tenant
+   suspendido, API caída). No hay sidebar ni header acá — solo el motivo
+   y la salida. */
+.app-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  max-width: 32rem;
+}
+
 /* ── Sidebar ─────────────────────────────────────────────────── */
 .app-sidebar {
   width: var(--sidebar-width);

@@ -114,3 +114,89 @@ o volver a Fly.io/VPS).
 **Impacto:** Stack de infraestructura MVP pasa a $0 USD/mes durante pruebas.
 Sin cambios en el código de las apps — mismos scripts `build`/`start` que ya
 usaba Fly.io.
+
+---
+
+## 2026-07-26 — Multi-tenant: confirmado single-org por usuario
+
+**Contexto:** ARCHITECTURE.md documentaba una estrategia schema-per-tenant
+que nunca se implementó — el código real usa fila-por-tenant (`tenant_id`
+en cada tabla) desde el sprint de módulos. Además, `members` tenía un
+unique compuesto `(userId, tenantId)` que en teoría permitía que un
+usuario perteneciera a varias organizaciones, aunque el onboarding ya
+bloqueaba crear una segunda membership en código (409 si ya existe una).
+Ningún lugar del producto (ni el front) soporta elegir/cambiar de
+organización.
+
+**Decisión:** Un usuario pertenece a una sola organización. Se cambia el
+unique de `members` a `userId` solo (migración
+`0008_single_org_and_tenant_status`), convirtiendo en garantía de base de
+datos lo que ya era una regla de la aplicación.
+
+**Impacto:** Si en el futuro hace falta multi-org por usuario (invitar al
+mismo email a dos tenants distintos), hay que revertir esta migración y
+construir el selector de organización — no es una limitación técnica de
+fondo, es una simplificación deliberada para el alcance actual.
+
+---
+
+## 2026-07-27 — RLS: el rol de conexión es la mitad del mecanismo
+
+**Contexto:** La RLS se implementó en `0007_enable_rls_tenant_isolation`
+(FORCE RLS sobre las 11 tablas del CRM core, policy contra
+`current_setting('app.tenant_id')`). En paralelo se había preparado una
+implementación alternativa que conectaba con `DATABASE_URL` — el rol owner
+de las tablas — dando por sentado que `FORCE ROW LEVEL SECURITY` alcanzaba
+para que las policies aplicaran también al owner.
+
+**Decisión:** Se confirma el diseño de dos roles. En Neon el rol
+`neondb_owner` tiene `BYPASSRLS = true`, y `BYPASSRLS` gana sobre `FORCE`:
+con ese rol las policies no se evalúan nunca. Una RLS servida por el owner
+no protege nada y además no falla de ninguna manera visible — las queries
+siguen devolviendo exactamente lo mismo que antes. Por eso el runtime
+conecta con `plata_app` (`DATABASE_URL_APP`, sin `BYPASSRLS`) para todo
+request con tenant resuelto, y el owner queda para migraciones, webhooks y
+la resolución del tenant previa al contexto.
+
+Regla práctica para el futuro: verificar `rolbypassrls` del rol con el que
+conecta la app antes de dar por buena cualquier policy.
+
+**Impacto:** Sin `DATABASE_URL_APP` la API no arranca (falla explícita en
+`db/tenant-db.ts`), que es el comportamiento deseado: es preferible no
+levantar a levantar con la RLS desactivada en silencio. El rol se crea
+por fuera de las migraciones, así que una base nueva necesita ese paso
+manual antes del primer deploy.
+
+**Nota sobre el pool:** cada request con tenant retiene una conexión de
+`tenantDb` mientras dura (es una transacción abierta, no una query
+suelta). El pool pasó de su default de 10 a 20, configurable con
+`DATABASE_POOL_MAX`. Queda pendiente que el checkout de billing mantiene
+esa transacción abierta durante la llamada HTTP a MercadoPago/NOWPayments.
+
+---
+
+## 2026-07-27 — Las migraciones dejan de correrse a mano
+
+**Contexto:** El deploy al VPS (`deploy-vps.yml`) construía y levantaba los
+contenedores pero nunca corría migraciones: se venían aplicando a mano.
+Como efecto secundario, `drizzle.__drizzle_migrations` quedó vacía con el
+schema ya en la 0007 — cualquier migrador arrancando desde ahí habría
+intentado recrear el schema entero.
+
+**Decisión:** El deploy corre `dist/db/migrate.js` en un contenedor
+efímero entre el `build` y el `up -d`, y se baselineó la tabla de tracking
+con las migraciones 0000-0007 ya aplicadas. Se usa el migrador de
+`drizzle-orm` y no drizzle-kit porque este último es devDependency y no
+existe en la imagen de producción.
+
+Migrar **antes** del swap de contenedores deja una ventana de segundos
+donde el código viejo ve el schema nuevo. Es el orden menos malo: migrar
+después significa que el código nuevo consulta columnas que todavía no
+existen y tira 500 en cada request, y además un fallo de migración ya no
+podría abortar el deploy. Si el downtime de esos segundos deja de ser
+aceptable, la salida es expand/contract (migraciones compatibles hacia
+atrás en dos pasos), no reordenar estos comandos.
+
+**Impacto:** Las migraciones nuevas se aplican solas al pushear a main. La
+contracara es que una migración destructiva ahora corre sin que nadie la
+mire: el filtro es la revisión del `.sql` antes del merge.

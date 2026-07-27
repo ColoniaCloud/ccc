@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { eq, and, desc } from 'drizzle-orm'
-import { db } from '../db'
 import { deals, pipelines, pipelineStages, contacts } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
@@ -24,6 +23,7 @@ const dealsRoutes = new Hono<{ Variables: HonoVariables }>()
 dealsRoutes.use('*', authMiddleware, tenantMiddleware)
 
 dealsRoutes.get('/', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
 
   const rows = await db
@@ -48,6 +48,7 @@ dealsRoutes.get('/', async (c) => {
 })
 
 dealsRoutes.post('/', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const body = await c.req.json().catch(() => null) as DealBody | null
 
@@ -98,6 +99,7 @@ dealsRoutes.post('/', async (c) => {
 })
 
 dealsRoutes.patch('/:id', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const id       = c.req.param('id')
 
@@ -153,6 +155,7 @@ dealsRoutes.patch('/:id', async (c) => {
 })
 
 dealsRoutes.delete('/:id', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const id       = c.req.param('id')
 

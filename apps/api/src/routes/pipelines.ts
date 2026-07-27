@@ -1,10 +1,10 @@
 import { Hono } from 'hono'
 import { eq, inArray, asc } from 'drizzle-orm'
-import { db } from '../db'
 import { pipelines, pipelineStages } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
 import type { HonoVariables } from '../types'
+import type { TenantTx } from '../db/tenant-db'
 
 const DEFAULT_STAGES = [
   { name: 'Nuevo',      color: '#58ACEE' },
@@ -18,7 +18,7 @@ const pipelinesRoutes = new Hono<{ Variables: HonoVariables }>()
 
 pipelinesRoutes.use('*', authMiddleware, tenantMiddleware)
 
-async function ensureDefaultPipeline(tenantId: string) {
+async function ensureDefaultPipeline(db: TenantTx, tenantId: string) {
   const existing = await db.query.pipelines.findFirst({
     where: eq(pipelines.tenantId, tenantId),
   })
@@ -43,9 +43,10 @@ async function ensureDefaultPipeline(tenantId: string) {
 }
 
 pipelinesRoutes.get('/', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
 
-  await ensureDefaultPipeline(tenantId)
+  await ensureDefaultPipeline(db, tenantId)
 
   const tenantPipelines = await db.query.pipelines.findMany({
     where: eq(pipelines.tenantId, tenantId),

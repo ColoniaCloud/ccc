@@ -10,7 +10,12 @@ export const members = pgTable('members', {
   role: text('role').notNull().default('seller').$type<UserRole>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
-  userTenantUnique: unique().on(table.userId, table.tenantId),
+  // Un usuario pertenece a una sola organización (decisión 2026-07-26,
+  // ver DECISIONS.md) — antes el unique era compuesto (userId, tenantId),
+  // lo que en teoría permitía múltiples memberships por usuario aunque
+  // el onboarding ya lo bloqueaba en código. Esto lo hace una garantía
+  // real de la base de datos, no solo de la capa de aplicación.
+  userUnique: unique().on(table.userId),
 }))
 
 export type Member = typeof members.$inferSelect

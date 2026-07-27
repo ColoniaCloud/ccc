@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { eq, and, asc } from 'drizzle-orm'
-import { db } from '../db'
 import { tags } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
@@ -12,6 +11,7 @@ const tagsRoutes = new Hono<{ Variables: HonoVariables }>()
 tagsRoutes.use('*', authMiddleware, tenantMiddleware)
 
 tagsRoutes.get('/', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
 
   const rows = await db.query.tags.findMany({
@@ -23,6 +23,7 @@ tagsRoutes.get('/', async (c) => {
 })
 
 tagsRoutes.post('/', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const body = await c.req.json().catch(() => null) as { name?: string; color?: string } | null
 

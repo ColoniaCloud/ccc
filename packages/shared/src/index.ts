@@ -1,5 +1,7 @@
 export type Plan = 'free' | 'pro' | 'business' | 'master' | 'enterprise'
 
+export type TenantStatus = 'active' | 'suspended'
+
 export type BillingProvider = 'mercadopago' | 'nowpayments'
 
 export type SubscriptionStatus = 'pending' | 'active' | 'paused' | 'cancelled'

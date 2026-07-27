@@ -31,6 +31,9 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
+      # Rol de runtime sin BYPASSRLS (plata_app) — sin esto la API no arranca.
+      - key: DATABASE_URL_APP
+        sync: false
       - key: BETTER_AUTH_SECRET
         sync: false
       - key: ANTHROPIC_API_KEY
@@ -54,6 +57,9 @@ services:
       - key: NOWPAYMENTS_EMAIL
         sync: false
       - key: NOWPAYMENTS_PASSWORD
+        sync: false
+      # Emails con acceso a /admin (separados por coma).
+      - key: SUPERADMIN_EMAILS
         sync: false
 
   - type: web

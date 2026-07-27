@@ -57,6 +57,13 @@
       "when": 1784981374406,
       "tag": "0007_enable_rls_tenant_isolation",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785173646866,
+      "tag": "0008_single_org_and_tenant_status",
+      "breakpoints": true
     }
   ]
 }

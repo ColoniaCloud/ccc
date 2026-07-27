@@ -31,6 +31,12 @@ export const tenantMiddleware = createMiddleware<{
     throw new HTTPException(404, { message: 'Tenant no encontrado' })
   }
 
+  // Suspensión desde el panel de administración: corta acá, antes de abrir
+  // la transacción. El mensaje se muestra tal cual en el layout de la app.
+  if (tenant.status === 'suspended') {
+    throw new HTTPException(403, { message: 'Esta organización está suspendida' })
+  }
+
   const userId = c.get('user')?.id
   if (!userId) {
     throw new HTTPException(401, { message: 'No autenticado' })

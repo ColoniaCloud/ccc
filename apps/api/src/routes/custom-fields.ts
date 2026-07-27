@@ -1,11 +1,11 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { eq, and, asc } from 'drizzle-orm'
-import { db } from '../db'
 import { customFieldDefinitions, members } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
 import type { HonoVariables } from '../types'
+import type { TenantTx } from '../db/tenant-db'
 import type { CustomFieldType, CustomFieldEntityType } from '@crm/shared'
 
 const FIELD_TYPES: CustomFieldType[] = ['text', 'number', 'date', 'boolean', 'select']
@@ -15,7 +15,7 @@ const customFieldsRoutes = new Hono<{ Variables: HonoVariables }>()
 
 customFieldsRoutes.use('*', authMiddleware, tenantMiddleware)
 
-async function requireAdmin(memberId: string) {
+async function requireAdmin(db: TenantTx, memberId: string) {
   const member = await db.query.members.findFirst({ where: eq(members.id, memberId) })
   if (!member || member.role !== 'admin') {
     throw new HTTPException(403, { message: 'Solo un admin puede gestionar los campos personalizados' })
@@ -23,6 +23,7 @@ async function requireAdmin(memberId: string) {
 }
 
 customFieldsRoutes.get('/', async (c) => {
+  const db         = c.get('db')
   const tenantId   = c.get('tenantId')
   const entityType = (c.req.query('entityType') ?? 'contact') as CustomFieldEntityType
 
@@ -39,10 +40,11 @@ customFieldsRoutes.get('/', async (c) => {
 })
 
 customFieldsRoutes.post('/', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const memberId = c.get('memberId')
 
-  await requireAdmin(memberId)
+  await requireAdmin(db, memberId)
 
   const body = await c.req.json().catch(() => null) as Partial<{
     key: string
@@ -96,11 +98,12 @@ customFieldsRoutes.post('/', async (c) => {
 })
 
 customFieldsRoutes.delete('/:id', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const memberId = c.get('memberId')
   const id       = c.req.param('id')
 
-  await requireAdmin(memberId)
+  await requireAdmin(db, memberId)
 
   const existing = await db.query.customFieldDefinitions.findFirst({
     where: and(eq(customFieldDefinitions.id, id), eq(customFieldDefinitions.tenantId, tenantId)),

@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { eq, and, asc } from 'drizzle-orm'
-import { db } from '../db'
 import { tasks, contacts, deals } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
@@ -21,6 +20,7 @@ const tasksRoutes = new Hono<{ Variables: HonoVariables }>()
 tasksRoutes.use('*', authMiddleware, tenantMiddleware)
 
 tasksRoutes.get('/', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
 
   const rows = await db.query.tasks.findMany({
@@ -32,6 +32,7 @@ tasksRoutes.get('/', async (c) => {
 })
 
 tasksRoutes.post('/', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const body = await c.req.json().catch(() => null) as TaskBody | null
 
@@ -71,6 +72,7 @@ tasksRoutes.post('/', async (c) => {
 })
 
 tasksRoutes.patch('/:id', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const id       = c.req.param('id')
 
@@ -101,6 +103,7 @@ tasksRoutes.patch('/:id', async (c) => {
 })
 
 tasksRoutes.delete('/:id', async (c) => {
+  const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const id       = c.req.param('id')
 

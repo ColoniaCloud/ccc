@@ -29,6 +29,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=prod-deps /standalone/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./dist
+# Los .sql de las migraciones no los emite tsc — se copian a mano al lado
+# del runner compilado (dist/db/migrate.js los busca en ./migrations).
+COPY --from=builder /app/apps/api/src/db/migrations ./dist/db/migrations
 COPY --from=builder /app/apps/api/package.json ./
 EXPOSE 3001
 CMD ["node", "dist/index.js"]

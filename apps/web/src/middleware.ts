@@ -22,10 +22,19 @@ const MARKETING_PATHS: Record<string, string> = {
 }
 
 export function middleware(request: NextRequest) {
-  const host   = (request.headers.get('host') ?? '').toLowerCase()
+  const host       = (request.headers.get('host') ?? '').toLowerCase()
+  const isMarketing = MARKETING_HOSTS.includes(host)
+
+  // El panel de administración es de la app, no de la web pública: en el
+  // dominio de marketing no tiene por qué existir (ahí ni siquiera hay
+  // sesión, así que solo redirigiría al login). Se manda a la landing.
+  if (isMarketing && request.nextUrl.pathname.startsWith('/admin')) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
   const target = MARKETING_PATHS[request.nextUrl.pathname]
 
-  if (target && MARKETING_HOSTS.includes(host)) {
+  if (target && isMarketing) {
     return NextResponse.rewrite(new URL(target, request.url))
   }
 
@@ -33,5 +42,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/herramientas', '/modulos', '/precios', '/contacto'],
+  matcher: ['/', '/herramientas', '/modulos', '/precios', '/contacto', '/admin/:path*'],
 }

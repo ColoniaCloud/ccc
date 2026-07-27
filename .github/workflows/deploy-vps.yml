@@ -26,5 +26,16 @@ jobs:
             git pull
             cd deploy
             docker compose build
+            # Migraciones antes del swap de contenedores: si fallan, el
+            # `set -e` corta acá y los contenedores viejos siguen sirviendo
+            # con la base intacta. Corre en un contenedor efímero de la
+            # imagen recién construida (hereda DATABASE_URL del env_file).
+            #
+            # Queda una ventana de segundos entre migrar y `up -d` donde el
+            # código viejo corre contra el schema nuevo. Es el orden menos
+            # malo de los dos — al revés, el código nuevo consulta columnas
+            # que todavía no existen y tira 500 en cada request, y un fallo
+            # de migración ya no podría abortar el deploy.
+            docker compose run --rm -T --no-deps crm-api node dist/db/migrate.js
             docker compose up -d
             docker image prune -f

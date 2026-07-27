@@ -17,13 +17,17 @@ type StatusResponse =
 
 // moduleKey opcional: un nav item con moduleKey solo se muestra si el tenant
 // tiene ese módulo activo (me.tenant.modules). Sin moduleKey, siempre visible.
-const NAV_ITEMS: { href: string; label: string; moduleKey?: ModuleKey }[] = [
+// superAdmin: solo visible para los emails de SUPERADMIN_EMAILS (lo informa
+// /api/me). Ocultar el link no protege nada — el control real está en
+// superAdminMiddleware, del lado de la API.
+const NAV_ITEMS: { href: string; label: string; moduleKey?: ModuleKey; superAdmin?: boolean }[] = [
   { href: '/app',            label: 'Resumen' },
   { href: '/app/contacts',   label: 'Contactos' },
   { href: '/app/pipeline',   label: 'Pipeline' },
   { href: '/app/tasks',      label: 'Tareas' },
   { href: '/app/billing',    label: 'Facturación' },
   { href: '/app/settings',   label: 'Configuración' },
+  { href: '/admin',          label: 'Administración', superAdmin: true },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const [me, setMe]           = useState<Me | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState<string | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem('plata:sidebar-collapsed') === '1'
@@ -70,7 +75,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           credentials: 'include',
           headers: { 'x-tenant-slug': statusData.tenant.slug },
         })
-        if (!meRes.ok) throw new Error('No se pudo cargar la cuenta')
+        // El mensaje de la API importa: acá es por donde llega el 403 de
+        // un tenant suspendido, y el usuario tiene que ver por qué se
+        // quedó afuera en vez de una pantalla de carga eterna.
+        if (!meRes.ok) {
+          const body = await meRes.json().catch(() => null) as { error?: string } | null
+          throw new Error(body?.error ?? 'No se pudo cargar la cuenta')
+        }
 
         const meData = await meRes.json() as Me
 
@@ -78,8 +89,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           setMe(meData)
           setLoading(false)
         }
-      } catch {
-        if (!cancelled) setLoading(false)
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'No se pudo cargar la cuenta')
+          setLoading(false)
+        }
       }
     }
 
@@ -92,11 +106,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.replace('/auth/sign-in')
   }
 
-  if (sessionLoading || loading || !me) {
+  if (sessionLoading || loading) {
     return (
       <div className="app-shell">
         <main className="app-main">
           <p className="app-loading">Cargando…</p>
+        </main>
+      </div>
+    )
+  }
+
+  if (!me) {
+    return (
+      <div className="app-shell">
+        <main className="app-main">
+          <div className="app-error">
+            <p className="form-error">{error ?? 'No se pudo cargar la cuenta'}</p>
+            <button className="btn-ghost" onClick={handleSignOut}>Cerrar sesión</button>
+          </div>
         </main>
       </div>
     )
@@ -123,6 +150,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <nav className="app-nav">
             {NAV_ITEMS
               .filter((item) => !item.moduleKey || me.tenant.modules.includes(item.moduleKey))
+              .filter((item) => !item.superAdmin || me.user.isSuperAdmin)
               .map((item) => (
                 <Link
                   key={item.href}
