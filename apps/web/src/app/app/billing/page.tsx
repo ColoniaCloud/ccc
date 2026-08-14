@@ -168,7 +168,7 @@ export default function BillingPage() {
 
               {item.key === 'enterprise' && (
                 <div className="plan-actions">
-                  <a className="btn-ghost" href="mailto:hola@colonia.cloud">Contactanos</a>
+                  <a className="btn-ghost" href="mailto:hola@plata.studio">Contactanos</a>
                 </div>
               )}
             </div>

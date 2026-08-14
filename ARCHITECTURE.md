@@ -4,11 +4,11 @@
 
 | Superficie | Dominio | Tecnología | Responsabilidad |
 |---|---|---|---|
-| **Web pública + App tenant** | `app.colonia.cloud` | Next.js 15 (App Router) | Landing, registro, onboarding, dashboard, CRM |
-| **API** | `crm.colonia.cloud` | Hono + Node.js | REST endpoints, auth, webhooks (MercadoPago/NOWPayments), jobs |
-| **Admin panel** | `app.colonia.cloud/admin` | Next.js 15 (App Router) | Gestión de tenants (lectura + suspender/reactivar/forzar plan) — acceso restringido a superadmin |
+| **Web pública + App tenant** | `app.plata.studio` | Next.js 15 (App Router) | Landing, registro, onboarding, dashboard, CRM |
+| **API** | `api.plata.studio` | Hono + Node.js | REST endpoints, auth, webhooks (MercadoPago/NOWPayments), jobs |
+| **Admin panel** | `app.plata.studio/admin` | Next.js 15 (App Router) | Gestión de tenants (lectura + suspender/reactivar/forzar plan) — acceso restringido a superadmin |
 
-Se abandonó el dominio `crm.lat` documentado originalmente a favor de `colonia.cloud`
+Se abandonó el dominio `crm.lat` documentado originalmente a favor de `plata.studio`
 (dominio real del usuario). Web pública y app tenant hoy son la misma app
 Next.js (`apps/web`), sin separar por subdominio de tenant todavía.
 
@@ -99,7 +99,7 @@ PostgreSQL (schema "public", un solo schema)
 La identificación del tenant se resuelve en `tenantMiddleware`
 (`apps/api/src/middleware/tenant.ts`) por:
 1. Header `x-tenant-slug` (lo que manda `apps/web`, ver `app-context.tsx`)
-2. Si no viene el header, subdominio del `Host` (`{slug}.app.colonia.cloud`)
+2. Si no viene el header, subdominio del `Host` (`{slug}.app.plata.studio`)
 
 Con el slug resuelto, se busca el tenant y se valida la membership del
 usuario autenticado (sesión de Better Auth) contra `members`. Recién ahí
@@ -151,8 +151,8 @@ crm/
 | `STRIPE_SECRET_KEY` | clave test | clave test | clave live |
 | `ANTHROPIC_API_KEY` | clave personal | clave de equipo | clave prod |
 | `PORT` | 3001 | 3001 | definido por plataforma |
-| `WEB_URL` | http://localhost:3000 | — | https://app.colonia.cloud |
-| `API_PUBLIC_URL` | http://localhost:3001 | — | https://crm.colonia.cloud |
+| `WEB_URL` | http://localhost:3000 | — | https://app.plata.studio |
+| `API_PUBLIC_URL` | http://localhost:3001 | — | https://api.plata.studio |
 
 Las variables solo requeridas por `api` viven en `apps/api/.env`.
 Las variables del root `.env` son para herramientas de desarrollo (turbo, scripts globales).

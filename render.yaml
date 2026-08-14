@@ -23,7 +23,7 @@ services:
         value: "20"
       # URL pública de esta misma API — usada para armar los callbacks de
       # NOWPayments. Poné acá la URL que te da Render (https://crm-api-xxxx.onrender.com)
-      # hasta que crm.colonia.cloud tenga el DNS apuntado; después, cambiala.
+      # hasta que api.plata.studio tenga el DNS apuntado; después, cambiala.
       - key: API_PUBLIC_URL
         sync: false
       # URL pública del frontend — usada para back_url de MercadoPago y CORS.
@@ -77,10 +77,10 @@ services:
       - key: NEXT_PUBLIC_API_URL
         sync: false
       # Dominio público de la landing (con https://) — se usa como base para
-      # las URLs absolutas de Open Graph. Sin definir, cae en colonia.cloud.
+      # las URLs absolutas de Open Graph. Sin definir, cae en plata.studio.
       - key: NEXT_PUBLIC_SITE_URL
         sync: false
-      # Dominios (separados por coma, sin protocolo, ej. "colonia.cloud,www.colonia.cloud")
+      # Dominios (separados por coma, sin protocolo, ej. "plata.studio,www.plata.studio")
       # que muestran la landing pública en "/" en vez del CRM. Opcional — sin
       # definir, "/" sigue yendo directo al login como hoy.
       - key: MARKETING_HOSTS

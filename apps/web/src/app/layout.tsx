@@ -12,7 +12,7 @@ const nunitoSans = Nunito_Sans({subsets:['latin'],variable:'--font-sans'});
 // Dominio público de la landing — necesario para que Next resuelva a URL
 // absoluta las imágenes de Open Graph (los scrapers de WhatsApp, X, LinkedIn
 // no siguen rutas relativas). En Render se setea NEXT_PUBLIC_SITE_URL.
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://colonia.cloud'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://plata.studio'
 
 const TITLE = 'Plata — CRM para equipos de venta en LATAM'
 const DESCRIPTION =
