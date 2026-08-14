@@ -1,6 +1,13 @@
 import type { Metadata } from 'next'
 import '../styles/theme.css'
 import './globals.css'
+import { Nunito_Sans, Noto_Sans } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const notoSansHeading = Noto_Sans({subsets:['latin'],variable:'--font-heading'});
+
+const nunitoSans = Nunito_Sans({subsets:['latin'],variable:'--font-sans'});
+
 
 // Dominio público de la landing — necesario para que Next resuelva a URL
 // absoluta las imágenes de Open Graph (los scrapers de WhatsApp, X, LinkedIn
@@ -41,7 +48,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" className={cn("font-sans", nunitoSans.variable, notoSansHeading.variable)}>
       <body>{children}</body>
     </html>
   )
