@@ -20,15 +20,20 @@ type LogoProps = {
  * hay que alternar con `/isologo.svg` (wordmark negro) desde acá.
  */
 export function Logo({ height = 28, priority = false, className }: LogoProps) {
+  const width = Math.round(height * RATIO)
   return (
     <Image
       src="/isologo-blanco.svg"
       alt="Plata"
-      width={Math.round(height * RATIO)}
+      width={width}
       height={height}
       priority={priority}
       unoptimized /* es SVG: no hay nada que optimizar */
       className={['brand-logo', className].filter(Boolean).join(' ')}
+      /* El preflight de Tailwind fuerza `img { height: auto }`, que sin un
+         width fijo hace que la imagen ocupe el 100% del contenedor en vez
+         del tamaño pedido. Un style inline gana esa pulseada. */
+      style={{ width, height }}
     />
   )
 }

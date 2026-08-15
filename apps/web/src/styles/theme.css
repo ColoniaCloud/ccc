@@ -22,45 +22,47 @@
 
   /* ── FONDOS ──────────────────────────────────────────────────
      Escala de superficies del más profundo al más elevado.
-     Cada nivel representa una capa visual distinta.            */
-  --color-base:       #16161D;   /* Fondo de página */
-  --color-surface-1:  #1E1E26;   /* Cards, sidebar, paneles principales */
-  --color-surface-2:  #252530;   /* Inputs, paneles secundarios */
-  --color-surface-3:  #2D2D3A;   /* Elevados: tooltips, popovers */
-  --color-surface-4:  #363645;   /* Máxima elevación (menús flotantes) */
+     Cada nivel representa una capa visual distinta.
+     Valores del preset de shadcn.io (bfpvSsCtG) — ver también los
+     tokens de shadcn en globals.css, que usan esta misma paleta.  */
+  --color-base:       oklch(0.145 0.008 326);   /* Fondo de página */
+  --color-surface-1:  oklch(0.212 0.019 322.12);   /* Cards, sidebar, paneles principales */
+  --color-surface-2:  oklch(0.263 0.024 320.12);   /* Inputs, paneles secundarios */
+  --color-surface-3:  oklch(0.274 0.006 286.033);   /* Elevados: tooltips, popovers */
+  --color-surface-4:  oklch(from var(--color-surface-3) calc(l + 0.06) c h);   /* Máxima elevación (menús flotantes) */
 
   /* ── BORDES ───────────────────────────────────────────────── */
-  --color-border:        rgba(255, 255, 255, 0.07);
-  --color-border-strong: rgba(255, 255, 255, 0.13);
-  --color-border-focus:  #7170C0;
+  --color-border:        oklch(1 0 0 / 10%);
+  --color-border-strong: oklch(1 0 0 / 16%);
+  --color-border-focus:  var(--color-accent);
 
   /* ── TEXTO ────────────────────────────────────────────────── */
-  --color-text:           #E4E4EC;   /* Primario */
-  --color-text-secondary: #9090A8;   /* Secundario, labels */
-  --color-text-tertiary:  #5C5C72;   /* Placeholder, hints */
-  --color-text-disabled:  #40404E;   /* Deshabilitado */
-  --color-text-on-accent: #FFFFFF;   /* Texto sobre color de acento */
+  --color-text:           oklch(0.985 0 0);   /* Primario */
+  --color-text-secondary: oklch(0.711 0.019 323.02);   /* Secundario, labels */
+  --color-text-tertiary:  oklch(from var(--color-text-secondary) calc(l - 0.18) c h);   /* Placeholder, hints */
+  --color-text-disabled:  oklch(from var(--color-text-secondary) calc(l - 0.32) c h);   /* Deshabilitado */
+  --color-text-on-accent: oklch(0.984 0.019 200.873);   /* Texto sobre color de acento */
 
   /* ── ACENTO / BRAND ───────────────────────────────────────── */
-  --color-accent:         #7170C0;   /* Indigo neutro */
-  --color-accent-hover:   #8180D0;
-  --color-accent-pressed: #6160A8;
-  --color-accent-subtle:  rgba(113, 112, 192, 0.16);
+  --color-accent:         oklch(0.45 0.085 224.283);
+  --color-accent-hover:   oklch(from var(--color-accent) calc(l + 0.08) c h);
+  --color-accent-pressed: oklch(from var(--color-accent) calc(l - 0.08) c h);
+  --color-accent-subtle:  oklch(from var(--color-accent) l c h / 16%);
 
   /* ── SEMÁNTICOS ───────────────────────────────────────────── */
   --color-success:         #3AB98A;
   --color-success-subtle:  rgba(58, 185, 138, 0.14);
   --color-warning:         #E8A838;
   --color-warning-subtle:  rgba(232, 168, 56, 0.14);
-  --color-danger:          #E5534B;
-  --color-danger-subtle:   rgba(229, 83, 75, 0.14);
+  --color-danger:          oklch(0.704 0.191 22.216);
+  --color-danger-subtle:   oklch(from var(--color-danger) l c h / 14%);
   --color-info:            #58ACEE;
   --color-info-subtle:     rgba(88, 172, 238, 0.14);
 
   /* ── ESTADOS INTERACTIVOS ─────────────────────────────────── */
   --color-hover:       rgba(255, 255, 255, 0.05);
   --color-pressed:     rgba(255, 255, 255, 0.09);
-  --color-selected:    rgba(113, 112, 192, 0.18);
+  --color-selected:    oklch(from var(--color-accent) l c h / 18%);
   --color-disabled-bg: rgba(255, 255, 255, 0.04);
 
   /* ── TIPOGRAFÍA ───────────────────────────────────────────── */
@@ -160,34 +162,37 @@
 [data-theme="light"] {
 
   /* ── FONDOS ───────────────────────────────────────────────── */
-  --color-base:       #F2F2F7;
-  --color-surface-1:  #FFFFFF;
-  --color-surface-2:  #EAEAF2;   /* Inputs — gris clarito con tinte índigo */
-  --color-surface-3:  #E2E2EA;
-  --color-surface-4:  #D8D8E3;
+  --color-base:       oklch(1 0 0);
+  --color-surface-1:  oklch(1 0 0);
+  --color-surface-2:  oklch(0.96 0.003 325.6);   /* Inputs */
+  --color-surface-3:  oklch(0.967 0.001 286.375);
+  --color-surface-4:  oklch(from var(--color-surface-3) calc(l - 0.08) c h);
 
   /* ── BORDES ───────────────────────────────────────────────── */
-  --color-border:        rgba(0, 0, 0, 0.10);
-  --color-border-strong: rgba(0, 0, 0, 0.18);   /* Cards — más definidas */
+  --color-border:        oklch(0.922 0.005 325.62);
+  --color-border-strong: oklch(from var(--color-border) calc(l - 0.12) c h);   /* Cards — más definidas */
 
   /* ── TEXTO ────────────────────────────────────────────────── */
-  --color-text:           #16161D;
-  --color-text-secondary: #5C5C72;
-  --color-text-tertiary:  #9090A8;
-  --color-text-disabled:  #C0C0D0;
-  --color-text-input:     #3D3D50;   /* Fuente de inputs — gris oscuro */
+  --color-text:           oklch(0.145 0.008 326);
+  --color-text-secondary: oklch(0.542 0.034 322.5);
+  --color-text-tertiary:  oklch(from var(--color-text-secondary) calc(l + 0.18) c h);
+  --color-text-disabled:  oklch(from var(--color-text-secondary) calc(l + 0.32) c h);
+  --color-text-input:     oklch(from var(--color-text) calc(l + 0.20) c h);   /* Fuente de inputs */
 
   /* ── ACENTO ───────────────────────────────────────────────── */
-  --color-accent-subtle: rgba(113, 112, 192, 0.12);
+  --color-accent:         oklch(0.52 0.105 223.128);   /* Primary claro del preset — distinto del dark */
+  --color-accent-hover:   oklch(from var(--color-accent) calc(l + 0.08) c h);
+  --color-accent-pressed: oklch(from var(--color-accent) calc(l - 0.08) c h);
+  --color-accent-subtle:  oklch(from var(--color-accent) l c h / 12%);
 
   /* ── BOTÓN SECUNDARIO ─────────────────────────────────────── */
-  --color-btn-secondary-bg:   #252530;   /* Gris oscuro del dark mode */
-  --color-btn-secondary-text: #E4E4EC;
+  --color-btn-secondary-bg:   oklch(0.263 0.024 320.12);   /* = --color-surface-2 del dark mode */
+  --color-btn-secondary-text: oklch(0.985 0 0);   /* = --color-text del dark mode */
 
   /* ── ESTADOS INTERACTIVOS ─────────────────────────────────── */
   --color-hover:       rgba(0, 0, 0, 0.04);
   --color-pressed:     rgba(0, 0, 0, 0.08);
-  --color-selected:    rgba(113, 112, 192, 0.10);
+  --color-selected:    oklch(from var(--color-accent) l c h / 10%);
   --color-disabled-bg: rgba(0, 0, 0, 0.04);
 
   /* ── SOMBRAS ──────────────────────────────────────────────── */
