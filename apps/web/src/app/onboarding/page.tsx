@@ -3,6 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
@@ -73,22 +77,26 @@ export default function OnboardingPage() {
       <h1 className="auth-title">Creá tu organización</h1>
       <p className="auth-subtitle">Así es como tu equipo va a ver el espacio de trabajo.</p>
 
-      {error && <div className="auth-error">{error}</div>}
+      {error && (
+        <Alert variant="destructive" className="mb-2">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-field">
-          <label className="auth-label" htmlFor="name">Nombre de la organización</label>
-          <input
+          <Label htmlFor="name">Nombre de la organización</Label>
+          <Input
             id="name" name="name" type="text"
-            className="auth-input" placeholder="Mi Empresa SRL"
+            placeholder="Mi Empresa SRL"
             required minLength={2} autoComplete="organization"
             value={name} onChange={(e) => setName(e.target.value)}
           />
         </div>
 
-        <button type="submit" className="auth-btn" disabled={loading}>
+        <Button type="submit" className="mt-2 w-full" disabled={loading}>
           {loading ? 'Creando…' : 'Continuar'}
-        </button>
+        </Button>
       </form>
     </>
   )

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Logo } from '@/components/Logo'
 import { GroundBackground } from '@/components/GroundBackground'
+import { Card } from '@/components/ui/card'
 import './auth.css'
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
@@ -10,9 +11,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="auth-brand">
           <Logo height={34} priority />
         </div>
-        <div className="auth-card">
+        <Card className="w-full max-w-[400px] gap-0 p-8 shadow-md">
           {children}
-        </div>
+        </Card>
         <p className="auth-footer">
           &copy; {new Date().getFullYear()} Plata. Todos los derechos reservados.
         </p>
