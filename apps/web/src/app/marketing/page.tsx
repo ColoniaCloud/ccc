@@ -1,4 +1,7 @@
 import Link from 'next/link'
+import { buttonVariants } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 
 const HIGHLIGHTS = [
   {
@@ -22,7 +25,9 @@ export default function MarketingHomePage() {
   return (
     <>
       <header className="mkt-hero">
-        <span className="mkt-eyebrow">CRM para equipos de venta en LATAM</span>
+        <Badge variant="outline" className="border-accent/30 bg-accent/10 text-accent uppercase tracking-wide">
+          CRM para equipos de venta en LATAM
+        </Badge>
         <h1>El CRM que tu equipo de ventas va a usar de verdad</h1>
         <p>
           Contactos, pipeline visual y tareas en un solo lugar — sin la carga
@@ -30,8 +35,8 @@ export default function MarketingHomePage() {
           vender.
         </p>
         <div className="mkt-hero-actions">
-          <Link href="/auth/sign-up" className="mkt-btn mkt-btn-primary">Empezá gratis</Link>
-          <Link href="/auth/sign-in" className="mkt-btn mkt-btn-ghost">Ya tengo cuenta</Link>
+          <Link href="/auth/sign-up" className={buttonVariants()}>Empezá gratis</Link>
+          <Link href="/auth/sign-in" className={buttonVariants({ variant: 'outline' })}>Ya tengo cuenta</Link>
         </div>
       </header>
 
@@ -42,29 +47,29 @@ export default function MarketingHomePage() {
         </div>
         <div className="mkt-features">
           {HIGHLIGHTS.map((f) => (
-            <div key={f.title} className="mkt-feature">
+            <Card key={f.title} className="gap-3 p-6">
               <div className="mkt-feature-icon">{f.icon}</div>
               <h3>{f.title}</h3>
               <p>{f.desc}</p>
-            </div>
+            </Card>
           ))}
         </div>
         <p style={{ textAlign: 'center', marginTop: 'var(--spacing-8)' }}>
-          <Link href="/herramientas" className="mkt-btn-ghost mkt-btn" style={{ display: 'inline-block' }}>
+          <Link href="/herramientas" className={buttonVariants({ variant: 'outline' })}>
             Ver todas las herramientas →
           </Link>
         </p>
       </section>
 
       <section className="mkt-section">
-        <div className="mkt-cta">
+        <Card className="mkt-cta">
           <h2>Armá tu organización en un minuto</h2>
           <p style={{ color: 'var(--color-text-secondary)', maxWidth: '48ch' }}>
             Sin tarjeta para empezar. Planes desde gratis — pasás al plan pago cuando
             quieras, con MercadoPago o cripto. <Link href="/precios">Ver precios</Link>.
           </p>
-          <Link href="/auth/sign-up" className="mkt-btn mkt-btn-primary">Crear mi cuenta</Link>
-        </div>
+          <Link href="/auth/sign-up" className={buttonVariants()}>Crear mi cuenta</Link>
+        </Card>
       </section>
     </>
   )

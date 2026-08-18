@@ -30,26 +30,19 @@
   gap: var(--spacing-4);
 }
 
-.mkt-nav-links a {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-}
+/* @layer base: el link "Empezá gratis" lleva las clases de Button
+   encima — sin layer, esta regla (aunque menos específica) le gana
+   igual a las utilities de Tailwind y pisaba su texto y tamaño. */
+@layer base {
+  .mkt-nav-links a {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+  }
 
-.mkt-nav-links a:hover {
-  color: var(--color-text);
-}
-
-.mkt-nav-cta {
-  padding: var(--spacing-2) var(--spacing-4);
-  background: var(--color-accent);
-  color: var(--color-text-on-accent) !important;
-  border-radius: var(--radius);
-}
-
-.mkt-nav-cta:hover {
-  background: var(--color-accent-hover);
-  color: var(--color-text-on-accent) !important;
+  .mkt-nav-links a:hover {
+    color: var(--color-text);
+  }
 }
 
 /* ── Hero ────────────────────────────────────────────────────── */
@@ -63,17 +56,6 @@
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-6);
-}
-
-.mkt-eyebrow {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-accent);
-  background: var(--color-accent-subtle);
-  padding: var(--spacing-1) var(--spacing-3);
-  border-radius: var(--radius-full);
 }
 
 .mkt-hero h1 {
@@ -99,33 +81,6 @@
   margin-top: var(--spacing-2);
   flex-wrap: wrap;
   justify-content: center;
-}
-
-.mkt-btn {
-  padding: var(--spacing-3) var(--spacing-6);
-  border-radius: var(--radius);
-  font-size: var(--font-size);
-  font-weight: var(--font-weight-medium);
-  transition: background var(--duration) var(--ease), border-color var(--duration) var(--ease);
-}
-
-.mkt-btn-primary {
-  background: var(--color-accent);
-  color: var(--color-text-on-accent);
-}
-
-.mkt-btn-primary:hover {
-  background: var(--color-accent-hover);
-  color: var(--color-text-on-accent);
-}
-
-.mkt-btn-ghost {
-  border: 1px solid var(--color-border-strong);
-  color: var(--color-text);
-}
-
-.mkt-btn-ghost:hover {
-  background: var(--color-hover);
 }
 
 /* ── Secciones ───────────────────────────────────────────────── */
@@ -171,16 +126,6 @@
   .mkt-features { grid-template-columns: 1fr; }
 }
 
-.mkt-feature {
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
-}
-
 .mkt-feature-icon {
   width: 36px;
   height: 36px;
@@ -219,21 +164,6 @@
   .mkt-pricing { grid-template-columns: 1fr 1fr; }
 }
 
-.mkt-price-card {
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
-}
-
-.mkt-price-card.featured {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px var(--color-accent) inset;
-}
-
 .mkt-price-name {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -261,29 +191,10 @@
   justify-content: center;
 }
 
-.mkt-payment-pill {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  padding: var(--spacing-2) var(--spacing-5);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
 /* ── CTA final ───────────────────────────────────────────────── */
 .mkt-cta {
   text-align: center;
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-12) var(--spacing-6);
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--spacing-4);
 }
 
 .mkt-cta h2 {
@@ -320,16 +231,6 @@
   color: var(--color-text);
 }
 
-.mkt-badge-soon {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-tertiary);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  padding: 2px var(--spacing-2);
-  border-radius: var(--radius-full);
-}
-
 /* ── Formulario de contacto ──────────────────────────────────── */
 .mkt-form {
   max-width: 480px;
@@ -346,47 +247,4 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
-}
-
-.mkt-form-field label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-}
-
-.mkt-form-field input,
-.mkt-form-field textarea {
-  padding: var(--spacing-2) var(--spacing-3);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-sans);
-  outline: none;
-  resize: vertical;
-  transition: border-color var(--duration) var(--ease),
-              box-shadow   var(--duration) var(--ease);
-}
-
-.mkt-form-field input:focus,
-.mkt-form-field textarea:focus {
-  border-color: var(--color-border-focus);
-  box-shadow:   var(--focus-ring);
-}
-
-.mkt-form-error {
-  font-size: var(--font-size-sm);
-  color: var(--color-danger);
-  padding: var(--spacing-3) var(--spacing-4);
-  background: var(--color-danger-subtle);
-  border-radius: var(--radius);
-}
-
-.mkt-form-success {
-  font-size: var(--font-size);
-  color: var(--color-success);
-  background: var(--color-success-subtle);
-  padding: var(--spacing-4) var(--spacing-5);
-  border-radius: var(--radius);
-  text-align: center;
 }

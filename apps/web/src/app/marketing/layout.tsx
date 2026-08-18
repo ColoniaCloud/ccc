@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Logo } from '@/components/Logo'
+import { buttonVariants } from '@/components/ui/button'
 import './marketing.css'
 
 const NAV_LINKS = [
@@ -22,7 +23,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <Link key={item.href} href={item.href}>{item.label}</Link>
           ))}
           <Link href="/auth/sign-in">Iniciar sesión</Link>
-          <Link href="/auth/sign-up" className="mkt-nav-cta">Empezá gratis</Link>
+          <Link href="/auth/sign-up" className={buttonVariants({ size: 'sm' })}>Empezá gratis</Link>
         </div>
       </nav>
 

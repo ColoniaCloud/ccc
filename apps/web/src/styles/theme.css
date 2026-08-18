@@ -269,17 +269,24 @@ input, textarea, select {
   transition: none;
 }
 
-:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
+/* @layer base para que los componentes de shadcn (Button, Badge, etc.)
+   puedan pisar estos defaults con sus propias utilities de Tailwind —
+   una regla suelta (sin layer) le gana a cualquier utility por más
+   específica que sea, así que un <a> con clase de Button quedaba con el
+   texto del mismo color que el fondo (--color-accent en ambos). */
+@layer base {
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
 
-a {
-  color: var(--color-accent);
-  text-decoration: none;
-}
-a:hover {
-  color: var(--color-accent-hover);
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--color-accent-hover);
+  }
 }
 
 

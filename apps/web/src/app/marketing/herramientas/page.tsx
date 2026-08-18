@@ -1,3 +1,5 @@
+import { Card } from '@/components/ui/card'
+
 const TOOLS = [
   {
     icon: '◐',
@@ -40,11 +42,11 @@ export default function HerramientasPage() {
       </div>
       <div className="mkt-features">
         {TOOLS.map((f) => (
-          <div key={f.title} className="mkt-feature">
+          <Card key={f.title} className="gap-3 p-6">
             <div className="mkt-feature-icon">{f.icon}</div>
             <h3>{f.title}</h3>
             <p>{f.desc}</p>
-          </div>
+          </Card>
         ))}
       </div>
     </section>

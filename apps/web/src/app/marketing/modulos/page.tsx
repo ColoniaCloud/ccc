@@ -1,3 +1,6 @@
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+
 const MODULES = [
   {
     icon: '⬡',
@@ -23,14 +26,14 @@ export default function ModulosPage() {
       </div>
       <div className="mkt-modules">
         {MODULES.map((m) => (
-          <div key={m.label} className="mkt-feature mkt-module-card">
+          <Card key={m.label} className="mkt-module-card gap-3 p-6">
             <div className="mkt-feature-icon">{m.icon}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
               <h3>{m.label}</h3>
-              <span className="mkt-badge-soon">Próximamente</span>
+              <Badge variant="secondary">Próximamente</Badge>
             </div>
             <p>{m.desc}</p>
-          </div>
+          </Card>
         ))}
       </div>
     </section>
