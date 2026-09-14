@@ -106,9 +106,11 @@ Estado: implementada en esta entrega.
 
 ### Fase 2 — Flujo comercial principal
 
-- Contactos y ficha de contacto.
-- Pipeline y creación/edición de deals.
+- Contactos, importación CSV y ficha de contacto.
+- Pipeline y creación/gestión de oportunidades.
 - Confirmaciones, toast y estados vacíos compartidos.
+
+Estado: implementada en la segunda entrega, excepto notificaciones toast y drag and drop, que quedan como mejoras progresivas para no incorporar comportamiento difícil de revertir sin pruebas de uso.
 
 ### Fase 3 — Productividad y administración
 

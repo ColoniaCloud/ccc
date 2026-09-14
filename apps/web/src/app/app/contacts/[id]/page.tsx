@@ -1,9 +1,57 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
+import { HugeiconsIcon } from '@hugeicons/react'
+import {
+  ArrowLeft01Icon,
+  Clock01Icon,
+  Contact01Icon,
+  Delete02Icon,
+  Note01Icon,
+  Settings02Icon,
+} from '@hugeicons/core-free-icons'
 import type { ContactStatus, CustomFieldType } from '@crm/shared'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 import { useApp } from '../../app-context'
 
 type CustomFieldValue = string | number | boolean | null
@@ -20,7 +68,6 @@ type Contact = {
 }
 
 type TagItem = { id: string; name: string; color: string | null }
-
 type ActivityType = 'note' | 'status_change' | 'created' | 'updated'
 
 type Activity = {
@@ -41,81 +88,91 @@ type FieldDefinition = {
 }
 
 const STATUS_LABELS: Record<ContactStatus, string> = {
-  lead:     'Lead',
+  lead: 'Lead',
   prospect: 'Prospecto',
-  client:   'Cliente',
+  client: 'Cliente',
   inactive: 'Inactivo',
 }
 
-function formatActivityDate(iso: string): string {
+function formatActivityDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-UY', {
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
-function describeActivity(activity: Activity): string {
+function describeActivity(activity: Activity) {
   if (activity.type === 'created') return 'Contacto creado'
   if (activity.type === 'status_change') {
     const from = activity.metadata?.from as string | undefined
-    const to   = activity.metadata?.to as string | undefined
+    const to = activity.metadata?.to as string | undefined
     const fromLabel = from ? (STATUS_LABELS[from as ContactStatus] ?? from) : '—'
-    const toLabel   = to ? (STATUS_LABELS[to as ContactStatus] ?? to) : '—'
+    const toLabel = to ? (STATUS_LABELS[to as ContactStatus] ?? to) : '—'
     return `Estado cambiado de ${fromLabel} a ${toLabel}`
   }
   if (activity.type === 'note') return activity.content ?? ''
   return activity.content ?? 'Contacto actualizado'
 }
 
+function initials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('')
+}
+
 export default function ContactDetailPage() {
-  const { id }  = useParams<{ id: string }>()
-  const router  = useRouter()
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const { apiFetch } = useApp()
 
-  const [contact, setContact]   = useState<Contact | null>(null)
+  const [contact, setContact] = useState<Contact | null>(null)
   const [notFound, setNotFound] = useState(false)
-  const [error, setError]       = useState<string | null>(null)
-  const [saving, setSaving]     = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  const [name, setName]               = useState('')
-  const [email, setEmail]             = useState('')
-  const [phone, setPhone]             = useState('')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [companyName, setCompanyName] = useState('')
-  const [status, setStatus]           = useState<ContactStatus>('lead')
-  const [notes, setNotes]             = useState('')
+  const [status, setStatus] = useState<ContactStatus>('lead')
+  const [notes, setNotes] = useState('')
 
-  const [allTags, setAllTags]           = useState<TagItem[] | null>(null)
+  const [allTags, setAllTags] = useState<TagItem[] | null>(null)
   const [contactTagIds, setContactTagIds] = useState<Set<string>>(new Set())
-  const [newTagName, setNewTagName]     = useState('')
-  const [creatingTag, setCreatingTag]   = useState(false)
-  const [tagError, setTagError]         = useState<string | null>(null)
+  const [newTagName, setNewTagName] = useState('')
+  const [creatingTag, setCreatingTag] = useState(false)
+  const [tagError, setTagError] = useState<string | null>(null)
 
   const [customFieldDefs, setCustomFieldDefs] = useState<FieldDefinition[] | null>(null)
-  const [fieldValues, setFieldValues]         = useState<Record<string, string | boolean>>({})
-  const [savingFields, setSavingFields]       = useState(false)
-  const [fieldsError, setFieldsError]         = useState<string | null>(null)
+  const [fieldValues, setFieldValues] = useState<Record<string, string | boolean>>({})
+  const [savingFields, setSavingFields] = useState(false)
+  const [fieldsError, setFieldsError] = useState<string | null>(null)
 
-  const [activities, setActivities]           = useState<Activity[] | null>(null)
+  const [activities, setActivities] = useState<Activity[] | null>(null)
   const [activitiesError, setActivitiesError] = useState<string | null>(null)
-  const [noteContent, setNoteContent]         = useState('')
-  const [addingNote, setAddingNote]           = useState(false)
+  const [noteContent, setNoteContent] = useState('')
+  const [addingNote, setAddingNote] = useState(false)
 
   useEffect(() => {
     let cancelled = false
 
     async function load() {
-      const res = await apiFetch(`/api/contacts/${id}`)
-
-      if (res.status === 404) {
+      const response = await apiFetch(`/api/contacts/${id}`)
+      if (response.status === 404) {
         if (!cancelled) setNotFound(true)
         return
       }
-      if (!res.ok) {
-        throw new Error('No se pudo cargar el contacto')
-      }
+      if (!response.ok) throw new Error('No se pudo cargar el contacto')
 
-      const data = await res.json() as { item: Contact }
-
+      const data = await response.json() as { item: Contact }
       if (!cancelled) {
         setContact(data.item)
         setName(data.item.name)
@@ -127,8 +184,9 @@ export default function ContactDetailPage() {
       }
     }
 
-    load().catch(() => { if (!cancelled) setError('No se pudo cargar el contacto') })
-
+    load().catch((loadError: unknown) => {
+      if (!cancelled) setError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el contacto')
+    })
     return () => { cancelled = true }
   }, [apiFetch, id])
 
@@ -136,106 +194,101 @@ export default function ContactDetailPage() {
     let cancelled = false
 
     async function loadTags() {
-      const [allRes, contactRes] = await Promise.all([
+      const [allResponse, contactResponse] = await Promise.all([
         apiFetch('/api/tags'),
         apiFetch(`/api/contacts/${id}/tags`),
       ])
-      const allData     = await allRes.json() as { items: TagItem[] }
-      const contactData = await contactRes.json() as { items: TagItem[] }
+      if (!allResponse.ok || !contactResponse.ok) throw new Error('No se pudieron cargar las etiquetas')
+      const allData = await allResponse.json() as { items: TagItem[] }
+      const contactData = await contactResponse.json() as { items: TagItem[] }
 
       if (!cancelled) {
         setAllTags(allData.items)
-        setContactTagIds(new Set(contactData.items.map((t) => t.id)))
+        setContactTagIds(new Set(contactData.items.map((tag) => tag.id)))
       }
     }
 
-    loadTags().catch(() => { if (!cancelled) setTagError('No se pudieron cargar las etiquetas') })
-
+    loadTags().catch((loadError: unknown) => {
+      if (!cancelled) setTagError(loadError instanceof Error ? loadError.message : 'No se pudieron cargar las etiquetas')
+    })
     return () => { cancelled = true }
   }, [apiFetch, id])
 
   useEffect(() => {
     let cancelled = false
 
-    async function loadDefs() {
-      const res  = await apiFetch('/api/custom-fields?entityType=contact')
-      const data = await res.json() as { items: FieldDefinition[] }
+    async function loadDefinitions() {
+      const response = await apiFetch('/api/custom-fields?entityType=contact')
+      if (!response.ok) throw new Error('No se pudieron cargar los campos personalizados')
+      const data = await response.json() as { items: FieldDefinition[] }
       if (!cancelled) setCustomFieldDefs(data.items)
     }
 
-    loadDefs().catch(() => { if (!cancelled) setFieldsError('No se pudieron cargar los campos personalizados') })
-
+    loadDefinitions().catch((loadError: unknown) => {
+      if (!cancelled) setFieldsError(loadError instanceof Error ? loadError.message : 'No se pudieron cargar los campos personalizados')
+    })
     return () => { cancelled = true }
   }, [apiFetch])
 
   async function loadActivities() {
-    const res  = await apiFetch(`/api/contacts/${id}/activities`)
-    const data = await res.json() as { items: Activity[] }
+    const response = await apiFetch(`/api/contacts/${id}/activities`)
+    if (!response.ok) throw new Error('No se pudo cargar la actividad')
+    const data = await response.json() as { items: Activity[] }
     setActivities(data.items)
   }
 
   useEffect(() => {
     let cancelled = false
-
-    loadActivities().catch(() => { if (!cancelled) setActivitiesError('No se pudo cargar la actividad') })
-
+    loadActivities().catch((loadError: unknown) => {
+      if (!cancelled) setActivitiesError(loadError instanceof Error ? loadError.message : 'No se pudo cargar la actividad')
+    })
     return () => { cancelled = true }
   }, [apiFetch, id])
 
   useEffect(() => {
     if (!contact || !customFieldDefs) return
-
     const initial: Record<string, string | boolean> = {}
-    for (const def of customFieldDefs) {
-      const raw = contact.customFields[def.key]
-      if (def.fieldType === 'boolean') {
-        initial[def.key] = Boolean(raw)
-      } else if (def.fieldType === 'date' && raw) {
-        initial[def.key] = String(raw).slice(0, 10)
-      } else {
-        initial[def.key] = raw === null || raw === undefined ? '' : String(raw)
-      }
+    for (const definition of customFieldDefs) {
+      const raw = contact.customFields[definition.key]
+      if (definition.fieldType === 'boolean') initial[definition.key] = Boolean(raw)
+      else if (definition.fieldType === 'date' && raw) initial[definition.key] = String(raw).slice(0, 10)
+      else initial[definition.key] = raw === null || raw === undefined ? '' : String(raw)
     }
     setFieldValues(initial)
   }, [contact, customFieldDefs])
 
-  function setFieldValue(key: string, value: string | boolean) {
-    setFieldValues((prev) => ({ ...prev, [key]: value }))
+  function setFieldValue(key: string, fieldValue: string | boolean) {
+    setFieldValues((previous) => ({ ...previous, [key]: fieldValue }))
   }
 
-  async function handleSaveFields(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function handleSaveFields(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     setFieldsError(null)
     setSavingFields(true)
-
     try {
-      const res = await apiFetch(`/api/contacts/${id}`, {
+      const response = await apiFetch(`/api/contacts/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ customFields: fieldValues }),
       })
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null) as { error?: string } | null
+      if (!response.ok) {
+        const body = await response.json().catch(() => null) as { error?: string } | null
         throw new Error(body?.error ?? 'No se pudieron guardar los campos')
       }
-
-      const data = await res.json() as { item: Contact }
+      const data = await response.json() as { item: Contact }
       setContact(data.item)
-    } catch (err: unknown) {
-      setFieldsError(err instanceof Error ? err.message : 'No se pudieron guardar los campos')
+    } catch (saveError: unknown) {
+      setFieldsError(saveError instanceof Error ? saveError.message : 'No se pudieron guardar los campos')
     } finally {
       setSavingFields(false)
     }
   }
 
   async function persistTags(nextIds: Set<string>) {
-    const res = await apiFetch(`/api/contacts/${id}/tags`, {
+    const response = await apiFetch(`/api/contacts/${id}/tags`, {
       method: 'PUT',
       body: JSON.stringify({ tagIds: Array.from(nextIds) }),
     })
-    if (!res.ok) {
-      throw new Error('No se pudieron actualizar las etiquetas')
-    }
+    if (!response.ok) throw new Error('No se pudieron actualizar las etiquetas')
   }
 
   async function toggleTag(tagId: string) {
@@ -243,101 +296,90 @@ export default function ContactDetailPage() {
     const next = new Set(previous)
     if (next.has(tagId)) next.delete(tagId)
     else next.add(tagId)
-
     setContactTagIds(next)
     setTagError(null)
 
     try {
       await persistTags(next)
-    } catch (err) {
+    } catch (updateError: unknown) {
       setContactTagIds(previous)
-      setTagError(err instanceof Error ? err.message : 'No se pudo actualizar la etiqueta')
+      setTagError(updateError instanceof Error ? updateError.message : 'No se pudo actualizar la etiqueta')
     }
   }
 
-  async function handleAddTag(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function handleAddTag(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     const trimmed = newTagName.trim()
     if (!trimmed) return
 
     setCreatingTag(true)
     setTagError(null)
-
     try {
-      const res = await apiFetch('/api/tags', {
+      const response = await apiFetch('/api/tags', {
         method: 'POST',
         body: JSON.stringify({ name: trimmed }),
       })
-      if (!res.ok) {
-        throw new Error('No se pudo crear la etiqueta')
-      }
+      if (!response.ok) throw new Error('No se pudo crear la etiqueta')
+      const data = await response.json() as { item: TagItem }
 
-      const data = await res.json() as { item: TagItem }
-
-      setAllTags((prev) => {
-        const list = prev ?? []
-        return list.some((t) => t.id === data.item.id)
+      setAllTags((previous) => {
+        const list = previous ?? []
+        return list.some((tag) => tag.id === data.item.id)
           ? list
-          : [...list, data.item].sort((a, b) => a.name.localeCompare(b.name))
+          : [...list, data.item].sort((first, second) => first.name.localeCompare(second.name))
       })
 
       const next = new Set(contactTagIds).add(data.item.id)
       setContactTagIds(next)
       await persistTags(next)
       setNewTagName('')
-    } catch (err) {
-      setTagError(err instanceof Error ? err.message : 'No se pudo crear la etiqueta')
+    } catch (createError: unknown) {
+      setTagError(createError instanceof Error ? createError.message : 'No se pudo crear la etiqueta')
     } finally {
       setCreatingTag(false)
     }
   }
 
-  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     setError(null)
     setSaving(true)
-
     try {
-      const res = await apiFetch(`/api/contacts/${id}`, {
+      const response = await apiFetch(`/api/contacts/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ name, email, phone, companyName, status, notes }),
       })
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null) as { error?: string } | null
+      if (!response.ok) {
+        const body = await response.json().catch(() => null) as { error?: string } | null
         throw new Error(body?.error ?? 'No se pudo guardar el contacto')
       }
-
-      const data = await res.json() as { item: Contact }
+      const data = await response.json() as { item: Contact }
       setContact(data.item)
       await loadActivities()
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el contacto')
+    } catch (saveError: unknown) {
+      setError(saveError instanceof Error ? saveError.message : 'No se pudo guardar el contacto')
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleAddNote(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function handleAddNote(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     const trimmed = noteContent.trim()
     if (!trimmed) return
 
     setAddingNote(true)
     setActivitiesError(null)
-
     try {
-      const res = await apiFetch(`/api/contacts/${id}/activities`, {
+      const response = await apiFetch(`/api/contacts/${id}/activities`, {
         method: 'POST',
         body: JSON.stringify({ content: trimmed }),
       })
-      if (!res.ok) {
-        throw new Error('No se pudo agregar la nota')
-      }
+      if (!response.ok) throw new Error('No se pudo agregar la nota')
       setNoteContent('')
       await loadActivities()
-    } catch (err) {
-      setActivitiesError(err instanceof Error ? err.message : 'No se pudo agregar la nota')
+    } catch (createError: unknown) {
+      setActivitiesError(createError instanceof Error ? createError.message : 'No se pudo agregar la nota')
     } finally {
       setAddingNote(false)
     }
@@ -345,219 +387,285 @@ export default function ContactDetailPage() {
 
   async function handleDelete() {
     setDeleting(true)
-    await apiFetch(`/api/contacts/${id}`, { method: 'DELETE' })
-    router.push('/app/contacts')
+    setError(null)
+    try {
+      const response = await apiFetch(`/api/contacts/${id}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('No se pudo eliminar el contacto')
+      router.push('/app/contacts')
+    } catch (deleteError: unknown) {
+      setError(deleteError instanceof Error ? deleteError.message : 'No se pudo eliminar el contacto')
+      setDeleteOpen(false)
+      setDeleting(false)
+    }
   }
 
   if (notFound) {
     return (
       <div className="page">
-        <p className="empty-state">Este contacto no existe.</p>
-        <Link href="/app/contacts" className="btn-ghost" style={{ alignSelf: 'flex-start' }}>Volver a contactos</Link>
+        <Card>
+          <CardHeader><CardTitle>Contacto no encontrado</CardTitle><CardDescription>Es posible que haya sido eliminado o que el enlace no sea correcto.</CardDescription></CardHeader>
+          <CardContent>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon"><HugeiconsIcon icon={Contact01Icon} strokeWidth={1.8} /></EmptyMedia>
+                <EmptyTitle>Este contacto no existe</EmptyTitle>
+                <EmptyDescription>Volvé al directorio para continuar trabajando.</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent><Button variant="outline" asChild><Link href="/app/contacts">Volver a contactos</Link></Button></EmptyContent>
+            </Empty>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   if (!contact) {
     return (
-      <div className="page">
-        <p className="empty-state">Cargando…</p>
+      <div className="page contact-detail-loading" aria-label="Cargando contacto">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="h-96 w-full" />
       </div>
     )
   }
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <Link href="/app/contacts" className="back-link">← Contactos</Link>
-          <h1>{contact.name}</h1>
+    <div className="page contact-profile-page">
+      <Button variant="ghost" size="sm" asChild className="contact-back-button">
+        <Link href="/app/contacts">
+          <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} data-icon="inline-start" />
+          Volver a contactos
+        </Link>
+      </Button>
+
+      <div className="contact-profile-header">
+        <div className="contact-profile-identity">
+          <Avatar size="lg"><AvatarFallback>{initials(contact.name)}</AvatarFallback></Avatar>
+          <div>
+            <div className="crm-title-row">
+              <h1>{contact.name}</h1>
+              <Badge variant="outline" data-contact-status={contact.status}>{STATUS_LABELS[contact.status]}</Badge>
+            </div>
+            <p>{contact.companyName ?? contact.email ?? 'Sin empresa ni email registrados'}</p>
+          </div>
         </div>
-        <button className="link-danger" onClick={handleDelete} disabled={deleting}>
-          {deleting ? 'Eliminando…' : 'Eliminar contacto'}
-        </button>
+        <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} data-icon="inline-start" />
+          Eliminar contacto
+        </Button>
       </div>
 
-      {error && <div className="form-error">{error}</div>}
+      {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
-      <div className="contact-detail">
-        <div className="contact-detail-main">
-          <div className="panel">
-            <h2>Datos del contacto</h2>
-            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
-              <div className="detail-form-grid">
-                <div className="inline-field">
-                  <label htmlFor="detail-name">Nombre</label>
-                  <input id="detail-name" required value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-                <div className="inline-field">
-                  <label htmlFor="detail-status">Estado</label>
-                  <select id="detail-status" value={status} onChange={(e) => setStatus(e.target.value as ContactStatus)}>
-                    {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="inline-field">
-                  <label htmlFor="detail-email">Email</label>
-                  <input id="detail-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="inline-field">
-                  <label htmlFor="detail-phone">Teléfono</label>
-                  <input id="detail-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                </div>
-                <div className="inline-field span-2">
-                  <label htmlFor="detail-company">Empresa</label>
-                  <input id="detail-company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-                </div>
-                <div className="inline-field span-2">
-                  <label htmlFor="detail-notes">Notas</label>
-                  <textarea id="detail-notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
-                </div>
-              </div>
-              <button type="submit" className="btn" disabled={saving} style={{ alignSelf: 'flex-start' }}>
-                {saving ? 'Guardando…' : 'Guardar cambios'}
-              </button>
-            </form>
-          </div>
+      <Tabs defaultValue="information" className="contact-profile-tabs">
+        <TabsList variant="line">
+          <TabsTrigger value="information"><HugeiconsIcon icon={Contact01Icon} strokeWidth={1.8} data-icon="inline-start" />Información</TabsTrigger>
+          <TabsTrigger value="fields"><HugeiconsIcon icon={Settings02Icon} strokeWidth={1.8} data-icon="inline-start" />Campos</TabsTrigger>
+          <TabsTrigger value="activity"><HugeiconsIcon icon={Clock01Icon} strokeWidth={1.8} data-icon="inline-start" />Actividad</TabsTrigger>
+        </TabsList>
 
-          <div className="panel">
-            <h2>Etiquetas</h2>
-
-            {tagError && (
-              <div className="form-error" style={{ marginBottom: 'var(--spacing-3)' }}>{tagError}</div>
-            )}
-
-            {!allTags ? (
-              <p className="empty-state">Cargando…</p>
-            ) : (
-              <>
-                <div className="tag-chip-row" style={{ marginBottom: 'var(--spacing-3)' }}>
-                  {allTags.length === 0 ? (
-                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-tertiary)' }}>
-                      Todavía no creaste etiquetas.
-                    </span>
-                  ) : (
-                    allTags.map((tag) => (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        className={`tag-chip tag-chip-toggle${contactTagIds.has(tag.id) ? ' active' : ''}`}
-                        onClick={() => toggleTag(tag.id)}
-                      >
-                        {tag.name}
-                      </button>
-                    ))
-                  )}
-                </div>
-                <form className="tag-chip-add-form" onSubmit={handleAddTag}>
-                  <input
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                    placeholder="Nueva etiqueta"
-                  />
-                  <button type="submit" className="btn-ghost" disabled={creatingTag || !newTagName.trim()}>
-                    {creatingTag ? 'Creando…' : 'Agregar'}
-                  </button>
-                </form>
-              </>
-            )}
-          </div>
-
-          <div className="panel">
-            <h2>Campos personalizados</h2>
-
-            {fieldsError && (
-              <div className="form-error" style={{ marginBottom: 'var(--spacing-3)' }}>{fieldsError}</div>
-            )}
-
-            {!customFieldDefs ? (
-              <p className="empty-state">Cargando…</p>
-            ) : customFieldDefs.length === 0 ? (
-              <p className="empty-state">
-                Todavía no hay campos personalizados. Podés crearlos en{' '}
-                <Link href="/app/settings/custom-fields">Configuración</Link>.
-              </p>
-            ) : (
-              <form onSubmit={handleSaveFields} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
-                <div className="detail-form-grid">
-                  {customFieldDefs.map((def) => (
-                    <div key={def.id} className="inline-field">
-                      <label htmlFor={`cf-${def.key}`}>{def.label}{def.required ? ' *' : ''}</label>
-                      {def.fieldType === 'boolean' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', paddingTop: 'var(--spacing-1)' }}>
-                          <input
-                            id={`cf-${def.key}`} type="checkbox"
-                            checked={Boolean(fieldValues[def.key])}
-                            onChange={(e) => setFieldValue(def.key, e.target.checked)}
-                          />
-                        </div>
-                      ) : def.fieldType === 'select' ? (
-                        <select
-                          id={`cf-${def.key}`}
-                          value={typeof fieldValues[def.key] === 'string' ? fieldValues[def.key] as string : ''}
-                          onChange={(e) => setFieldValue(def.key, e.target.value)}
-                        >
-                          <option value="">—</option>
-                          {(def.options ?? []).map((opt) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          id={`cf-${def.key}`}
-                          type={def.fieldType === 'number' ? 'number' : def.fieldType === 'date' ? 'date' : 'text'}
-                          value={typeof fieldValues[def.key] === 'string' ? fieldValues[def.key] as string : ''}
-                          onChange={(e) => setFieldValue(def.key, e.target.value)}
-                        />
-                      )}
+        <TabsContent value="information" className="contact-tab-content">
+          <div className="contact-information-grid">
+            <Card>
+              <CardHeader>
+                <CardTitle>Datos del contacto</CardTitle>
+                <CardDescription>Información principal visible para todo el equipo.</CardDescription>
+              </CardHeader>
+              <form onSubmit={handleSave}>
+                <CardContent>
+                  <FieldGroup>
+                    <div className="crm-field-grid">
+                      <Field>
+                        <FieldLabel htmlFor="detail-name">Nombre</FieldLabel>
+                        <Input id="detail-name" required value={name} onChange={(event) => setName(event.target.value)} />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="detail-status">Estado</FieldLabel>
+                        <Select value={status} onValueChange={(nextStatus) => setStatus(nextStatus as ContactStatus)}>
+                          <SelectTrigger id="detail-status" className="w-full"><SelectValue /></SelectTrigger>
+                          <SelectContent position="popper">
+                            <SelectGroup>{Object.entries(STATUS_LABELS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="detail-email">Email</FieldLabel>
+                        <Input id="detail-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="detail-phone">Teléfono</FieldLabel>
+                        <Input id="detail-phone" value={phone} onChange={(event) => setPhone(event.target.value)} />
+                      </Field>
                     </div>
-                  ))}
-                </div>
-                <button type="submit" className="btn" disabled={savingFields} style={{ alignSelf: 'flex-start' }}>
-                  {savingFields ? 'Guardando…' : 'Guardar campos'}
-                </button>
+                    <Field>
+                      <FieldLabel htmlFor="detail-company">Empresa</FieldLabel>
+                      <Input id="detail-company" value={companyName} onChange={(event) => setCompanyName(event.target.value)} />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="detail-notes">Notas internas</FieldLabel>
+                      <Textarea id="detail-notes" rows={5} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Contexto, preferencias o información relevante…" />
+                    </Field>
+                  </FieldGroup>
+                </CardContent>
+                <CardFooter className="contact-card-footer"><Button type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</Button></CardFooter>
               </form>
-            )}
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Etiquetas</CardTitle>
+                <CardDescription>Clasificá este contacto para encontrarlo y segmentarlo rápidamente.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tagError && <Alert variant="destructive" className="mb-3"><AlertDescription>{tagError}</AlertDescription></Alert>}
+                {!allTags ? (
+                  <div className="contact-tags-loading"><Skeleton className="h-9 w-full" /><Skeleton className="h-9 w-full" /></div>
+                ) : allTags.length === 0 ? (
+                  <Empty className="contact-tags-empty">
+                    <EmptyHeader><EmptyTitle>Sin etiquetas todavía</EmptyTitle><EmptyDescription>Creá una abajo para empezar a segmentar.</EmptyDescription></EmptyHeader>
+                  </Empty>
+                ) : (
+                  <FieldSet>
+                    <FieldLegend variant="label">Etiquetas disponibles</FieldLegend>
+                    <FieldGroup className="contact-tag-options">
+                      {allTags.map((tag) => (
+                        <Field orientation="horizontal" key={tag.id}>
+                          <Checkbox id={`tag-${tag.id}`} checked={contactTagIds.has(tag.id)} onCheckedChange={() => void toggleTag(tag.id)} />
+                          <FieldLabel htmlFor={`tag-${tag.id}`}>{tag.name}</FieldLabel>
+                        </Field>
+                      ))}
+                    </FieldGroup>
+                  </FieldSet>
+                )}
+              </CardContent>
+              <CardFooter>
+                <form className="contact-tag-form" onSubmit={handleAddTag}>
+                  <Field>
+                    <FieldLabel htmlFor="new-tag" className="sr-only">Nueva etiqueta</FieldLabel>
+                    <Input id="new-tag" value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder="Nueva etiqueta" />
+                  </Field>
+                  <Button type="submit" variant="outline" disabled={creatingTag || !newTagName.trim()}>{creatingTag ? 'Creando…' : 'Agregar'}</Button>
+                </form>
+              </CardFooter>
+            </Card>
           </div>
-        </div>
+        </TabsContent>
 
-        <div className="contact-detail-side">
-          <div className="panel">
-            <h2>Actividad</h2>
+        <TabsContent value="fields" className="contact-tab-content">
+          <Card>
+            <CardHeader>
+              <CardTitle>Campos personalizados</CardTitle>
+              <CardDescription>Información adaptada al proceso comercial de tu organización.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {fieldsError && <Alert variant="destructive" className="mb-3"><AlertDescription>{fieldsError}</AlertDescription></Alert>}
+              {!customFieldDefs ? (
+                <div className="contact-fields-loading"><Skeleton className="h-9 w-full" /><Skeleton className="h-9 w-full" /><Skeleton className="h-9 w-full" /></div>
+              ) : customFieldDefs.length === 0 ? (
+                <Empty className="contact-fields-empty">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon"><HugeiconsIcon icon={Settings02Icon} strokeWidth={1.8} /></EmptyMedia>
+                    <EmptyTitle>No hay campos personalizados</EmptyTitle>
+                    <EmptyDescription>Creá campos para capturar los datos específicos de tu negocio.</EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent><Button variant="outline" asChild><Link href="/app/settings/custom-fields">Configurar campos</Link></Button></EmptyContent>
+                </Empty>
+              ) : (
+                <form onSubmit={handleSaveFields}>
+                  <FieldGroup className="contact-custom-fields">
+                    {customFieldDefs.map((definition) => {
+                      const stringValue = typeof fieldValues[definition.key] === 'string' ? fieldValues[definition.key] as string : ''
+                      return definition.fieldType === 'boolean' ? (
+                        <Field orientation="horizontal" key={definition.id}>
+                          <FieldLabel htmlFor={`cf-${definition.key}`}>{definition.label}{definition.required ? ' *' : ''}</FieldLabel>
+                          <Switch id={`cf-${definition.key}`} checked={Boolean(fieldValues[definition.key])} onCheckedChange={(checked) => setFieldValue(definition.key, checked)} />
+                        </Field>
+                      ) : (
+                        <Field key={definition.id}>
+                          <FieldLabel htmlFor={`cf-${definition.key}`}>{definition.label}{definition.required ? ' *' : ''}</FieldLabel>
+                          {definition.fieldType === 'select' ? (
+                            <Select value={stringValue || 'none'} onValueChange={(selected) => setFieldValue(definition.key, selected === 'none' ? '' : selected)}>
+                              <SelectTrigger id={`cf-${definition.key}`} className="w-full"><SelectValue placeholder="Sin valor" /></SelectTrigger>
+                              <SelectContent position="popper">
+                                <SelectGroup>
+                                  <SelectItem value="none">Sin valor</SelectItem>
+                                  {(definition.options ?? []).map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              id={`cf-${definition.key}`}
+                              type={definition.fieldType === 'number' ? 'number' : definition.fieldType === 'date' ? 'date' : 'text'}
+                              value={stringValue}
+                              onChange={(event) => setFieldValue(definition.key, event.target.value)}
+                            />
+                          )}
+                        </Field>
+                      )
+                    })}
+                  </FieldGroup>
+                  <div className="contact-fields-actions"><Button type="submit" disabled={savingFields}>{savingFields ? 'Guardando…' : 'Guardar campos'}</Button></div>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            {activitiesError && (
-              <div className="form-error" style={{ marginBottom: 'var(--spacing-3)' }}>{activitiesError}</div>
-            )}
+        <TabsContent value="activity" className="contact-tab-content">
+          <Card>
+            <CardHeader>
+              <CardTitle>Actividad</CardTitle>
+              <CardDescription>Notas y cambios registrados para este contacto.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="contact-note-form" onSubmit={handleAddNote}>
+                <Field>
+                  <FieldLabel htmlFor="contact-note">Agregar nota</FieldLabel>
+                  <Textarea id="contact-note" rows={3} value={noteContent} onChange={(event) => setNoteContent(event.target.value)} placeholder="Escribí el resultado de una llamada, reunión o seguimiento…" />
+                </Field>
+                <Button type="submit" disabled={addingNote || !noteContent.trim()}>
+                  <HugeiconsIcon icon={Note01Icon} strokeWidth={2} data-icon="inline-start" />
+                  {addingNote ? 'Agregando…' : 'Agregar nota'}
+                </Button>
+              </form>
 
-            <form className="tag-chip-add-form" onSubmit={handleAddNote} style={{ marginBottom: 'var(--spacing-4)' }}>
-              <input
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Agregar una nota…"
-              />
-              <button type="submit" className="btn-ghost" disabled={addingNote || !noteContent.trim()}>
-                {addingNote ? 'Agregando…' : 'Agregar'}
-              </button>
-            </form>
+              {activitiesError && <Alert variant="destructive" className="mt-4"><AlertDescription>{activitiesError}</AlertDescription></Alert>}
+              {!activities ? (
+                <div className="contact-activity-loading"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>
+              ) : activities.length === 0 ? (
+                <Empty className="contact-activity-empty"><EmptyHeader><EmptyTitle>Sin actividad registrada</EmptyTitle><EmptyDescription>Agregá una nota para iniciar el historial.</EmptyDescription></EmptyHeader></Empty>
+              ) : (
+                <ol className="contact-timeline">
+                  {activities.map((activity) => (
+                    <li key={activity.id} data-activity-type={activity.type}>
+                      <span className="contact-timeline-marker" />
+                      <div>
+                        <p>{describeActivity(activity)}</p>
+                        <time dateTime={activity.createdAt}>{formatActivityDate(activity.createdAt)}</time>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-            {!activities ? (
-              <p className="empty-state">Cargando…</p>
-            ) : activities.length === 0 ? (
-              <p className="empty-state">Todavía no hay actividad registrada.</p>
-            ) : (
-              <ul className="timeline">
-                {activities.map((activity) => (
-                  <li key={activity.id} className={`timeline-item timeline-item-${activity.type}`}>
-                    <p className="timeline-content">{describeActivity(activity)}</p>
-                    <span className="timeline-date">{formatActivityDate(activity.createdAt)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      </div>
+      <AlertDialog open={deleteOpen} onOpenChange={(open) => { if (!deleting) setDeleteOpen(open) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia><HugeiconsIcon icon={Delete02Icon} strokeWidth={1.8} /></AlertDialogMedia>
+            <AlertDialogTitle>Eliminar contacto</AlertDialogTitle>
+            <AlertDialogDescription>Vas a eliminar a {contact.name} y su información asociada. Esta acción no se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" disabled={deleting} onClick={() => void handleDelete()}>{deleting ? 'Eliminando…' : 'Eliminar definitivamente'}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
