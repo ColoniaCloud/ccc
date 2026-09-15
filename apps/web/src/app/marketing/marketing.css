@@ -1,7 +1,31 @@
 .mkt {
+  position: relative;
+  isolation: isolate;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+  background: transparent;
+}
+
+.dynamic-wave-canvas-background {
+  z-index: 0;
+  background: var(--color-base);
+}
+
+.mkt::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 18%, transparent 0, rgb(8 6 18 / 16%) 42%, rgb(8 6 18 / 42%) 100%),
+    linear-gradient(180deg, rgb(8 6 18 / 8%), rgb(8 6 18 / 34%));
+}
+
+.mkt > :not(.dynamic-wave-canvas-background) {
+  position: relative;
+  z-index: 2;
 }
 
 /* ── Nav ─────────────────────────────────────────────────────── */

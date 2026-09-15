@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Logo } from '@/components/Logo'
+import HeroWave from '@/components/ui/dynamic-wave-canvas-background'
 import { buttonVariants } from '@/components/ui/button'
 import './marketing.css'
 
@@ -14,6 +15,7 @@ const NAV_LINKS = [
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="mkt">
+      <HeroWave />
       <nav className="mkt-nav">
         <Link href="/" className="mkt-brand" aria-label="Plata — inicio">
           <Logo height={36} priority />
