@@ -272,7 +272,7 @@
 
 .timeline-content {
   font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
+  color: var(--color-text);
   margin: 0;
 }
 
@@ -360,7 +360,7 @@
 .bulk-toolbar-count {
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text);
 }
 
 .inline-field {
@@ -1488,7 +1488,7 @@
   justify-content: flex-end;
   padding: var(--spacing-4) var(--spacing-6);
   border-top: 1px solid var(--color-border);
-  background: color-mix(in oklch, var(--color-muted) 55%, transparent);
+  background: color-mix(in oklch, var(--color-surface-2) 55%, transparent);
 }
 
 .crm-field-grid {
@@ -1897,21 +1897,21 @@
 .import-step-number svg { width: 14px; height: 14px; }
 
 .import-step[data-active] {
-  background: var(--color-accent-soft);
+  background: var(--color-accent-subtle);
   color: var(--color-accent);
 }
 
 .import-step[data-active] .import-step-number {
   border-color: var(--color-accent);
   background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  color: var(--color-text-on-accent);
 }
 
 .import-step[data-complete] { color: var(--color-text-secondary); }
 
 .import-step[data-complete] .import-step-number {
   border-color: var(--color-success);
-  background: var(--color-success-soft);
+  background: var(--color-success-subtle);
   color: var(--color-success);
 }
 
@@ -1940,7 +1940,7 @@
 
 .import-dropzone:hover {
   border-color: var(--color-accent);
-  background: var(--color-accent-soft);
+  background: var(--color-accent-subtle);
 }
 
 .import-upload-icon,
@@ -1950,7 +1950,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-lg);
-  background: var(--color-accent-soft);
+  background: var(--color-accent-subtle);
   color: var(--color-accent);
 }
 
@@ -1965,13 +1965,13 @@
 
 .import-dropzone-copy strong {
   color: var(--color-text);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
 }
 
 .import-dropzone-copy span {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-normal);
 }
 
 .import-dropzone [data-slot="input"] {
@@ -2110,7 +2110,7 @@
   width: 52px;
   height: 52px;
   margin-bottom: var(--spacing-2);
-  background: var(--color-success-soft);
+  background: var(--color-success-subtle);
   color: var(--color-success);
 }
 

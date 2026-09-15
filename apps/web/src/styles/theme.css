@@ -234,12 +234,18 @@
 /* ────────────────────────────────────────────────────────────────
    4. BASE GLOBAL
    ──────────────────────────────────────────────────────────────── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* El reset vive en la capa base para que las utilities de Tailwind/shadcn
+   (p-*, px-*, py-*, m-*, etc.) puedan sobrescribirlo. Fuera de una capa,
+   esta regla universal tenía más prioridad que toda la capa utilities y
+   eliminaba el padding de Cards, Buttons, Sheets y campos. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html {
