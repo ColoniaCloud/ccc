@@ -1,12 +1,17 @@
 import type { Metadata } from 'next'
 import '../styles/theme.css'
 import './globals.css'
-import { Nunito_Sans, Noto_Sans } from "next/font/google";
+import { Nunito_Sans, Poppins } from "next/font/google";
 import { cn } from "@/lib/utils";
 
-const notoSansHeading = Noto_Sans({subsets:['latin'],variable:'--font-heading'});
+const poppinsHeading = Poppins({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  variable: '--font-heading',
+  display: 'swap',
+});
 
-const nunitoSans = Nunito_Sans({subsets:['latin'],variable:'--font-sans'});
+const nunitoSans = Nunito_Sans({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
 
 
 // Dominio público de la landing — necesario para que Next resuelva a URL
@@ -48,7 +53,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={cn("font-sans", nunitoSans.variable, notoSansHeading.variable)}>
+    <html lang="es" className={cn("font-sans", nunitoSans.variable, poppinsHeading.variable)}>
       <body>{children}</body>
     </html>
   )
