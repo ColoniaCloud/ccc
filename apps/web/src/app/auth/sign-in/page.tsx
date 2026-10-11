@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signIn } from '@/lib/auth'
+import { signIn, authErrorMessage } from '@/lib/auth'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -26,18 +26,25 @@ export default function SignInPage() {
     const password = form.get('password') as string
 
     try {
-      await signIn.email({ email, password })
+      const { error: signInError } = await signIn.email({ email, password })
+      if (signInError) {
+        setError(authErrorMessage(signInError, 'No se pudo iniciar sesión. Probá de nuevo.'))
+        return
+      }
 
       // Determinar destino según estado de onboarding
-      const res        = await fetch(`${API_URL}/api/onboarding/status`, {
+      const res = await fetch(`${API_URL}/api/onboarding/status`, {
         credentials: 'include',
       })
+      if (!res.ok) {
+        setError('Ingresaste, pero no pudimos cargar tu cuenta. Recargá la página.')
+        return
+      }
       const { status } = await res.json() as { status: string }
 
       router.push(status === 'completed' ? '/app' : '/onboarding')
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Email o contraseña incorrectos'
-      setError(msg)
+    } catch {
+      setError('No se pudo conectar con el servidor. Revisá tu conexión.')
     } finally {
       setLoading(false)
     }

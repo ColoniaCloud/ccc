@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signUp } from '@/lib/auth'
+import { signUp, authErrorMessage } from '@/lib/auth'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -25,11 +25,14 @@ export default function SignUpPage() {
     const password = form.get('password') as string
 
     try {
-      await signUp.email({ name, email, password })
+      const { error: signUpError } = await signUp.email({ name, email, password })
+      if (signUpError) {
+        setError(authErrorMessage(signUpError, 'Error al crear la cuenta'))
+        return
+      }
       router.push('/onboarding')
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al crear la cuenta'
-      setError(msg)
+    } catch {
+      setError('No se pudo conectar con el servidor. Revisá tu conexión.')
     } finally {
       setLoading(false)
     }
