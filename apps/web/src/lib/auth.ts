@@ -10,7 +10,19 @@ export const {
   signOut,
   useSession,
   getSession,
+  sendVerificationEmail,
+  requestPasswordReset,
+  resetPassword,
 } = authClient
+
+/**
+ * URL absoluta en la web actual. Los links de los correos y los redirects
+ * del login social los resuelve la API (api.plata.studio), así que necesitan
+ * saber a qué dominio de la web volver.
+ */
+export function webUrl(path: string): string {
+  return `${window.location.origin}${path}`
+}
 
 // Better Auth no lanza excepciones: signIn/signUp devuelven `{ data, error }`.
 // Hay que mirar `error` explícitamente; si no, un login fallido sigue de largo

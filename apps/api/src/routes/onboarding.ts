@@ -5,6 +5,7 @@ import { db } from '../db'
 import { tenants, members } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import type { HonoVariables } from '../types'
+import { validateBusinessProfile, localeForCountry } from '../onboarding/business-profile'
 
 const onboardingRoutes = new Hono<{ Variables: HonoVariables }>()
 
@@ -64,15 +65,21 @@ onboardingRoutes.post('/', authMiddleware, async (c) => {
     throw new HTTPException(409, { message: 'Ya completaste el onboarding' })
   }
 
-  const body = await c.req.json().catch(() => null) as { name?: string } | null
-  const name = body?.name?.trim()
-  if (!name || name.length < 2) {
-    throw new HTTPException(400, { message: 'El nombre de la organización es requerido' })
+  const result = validateBusinessProfile(await c.req.json().catch(() => null))
+  if (!result.valid) {
+    throw new HTTPException(400, { message: result.error })
   }
+  const { name, profile } = result.values
 
   const slug = await uniqueSlug(slugify(name))
 
-  const [tenant] = await db.insert(tenants).values({ name, slug }).returning()
+  const [tenant] = await db.insert(tenants).values({
+    name,
+    slug,
+    locale: localeForCountry(profile.country),
+    businessProfile: profile,
+    businessProfileUpdatedAt: new Date(),
+  }).returning()
   if (!tenant) {
     throw new HTTPException(500, { message: 'No se pudo crear la organización' })
   }

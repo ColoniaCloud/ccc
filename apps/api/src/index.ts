@@ -16,6 +16,8 @@ import { tagsRoutes } from './routes/tags'
 import { customFieldsRoutes } from './routes/custom-fields'
 import { contactRoutes } from './routes/contact'
 import { adminRoutes } from './routes/admin'
+import { businessProfileRoutes } from './routes/business-profile'
+import { enabledSocialProviders } from './lib/auth'
 import { getAllowedOrigins } from './lib/origins'
 import { getSuperAdminEmails } from './lib/superadmin'
 
@@ -45,6 +47,10 @@ app.get('/health', (c) => {
   })
 })
 
+// Proveedores de login social configurados (público): la web muestra solo
+// los botones de los que tienen credenciales.
+app.get('/api/auth-providers', (c) => c.json({ status: 'ok', providers: enabledSocialProviders }))
+
 app.route('/api/auth', authRoutes)
 app.route('/api/me', meRoutes)
 app.route('/api/onboarding', onboardingRoutes)
@@ -58,6 +64,7 @@ app.route('/api/tags', tagsRoutes)
 app.route('/api/custom-fields', customFieldsRoutes)
 app.route('/api/contact', contactRoutes)
 app.route('/api/admin', adminRoutes)
+app.route('/api/business-profile', businessProfileRoutes)
 
 // El panel de administración depende de una env var: sin ella el 403 es
 // idéntico al de un usuario sin permisos, así que un panel inaccesible por

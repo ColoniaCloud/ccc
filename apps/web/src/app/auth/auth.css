@@ -82,3 +82,70 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
+
+/* ── Login social y pantallas de verificación / contraseña ───────── */
+
+.auth-social {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+}
+
+.auth-social-error {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.auth-forgot {
+  align-self: flex-end;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.auth-message {
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+.auth-message strong {
+  color: var(--color-text);
+}
+
+.auth-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2) var(--spacing-4);
+}
+
+.auth-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+
+.auth-optional {
+  font-size: var(--font-size-xs);
+  font-weight: normal;
+  color: var(--color-text-tertiary);
+}

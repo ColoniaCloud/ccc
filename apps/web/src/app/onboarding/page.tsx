@@ -1,31 +1,35 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from '@/lib/auth'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  BusinessProfileForm, toFormValues, toRequestBody, type BusinessProfileValues,
+} from '@/components/BusinessProfileForm'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
 type StatusResponse = { status: 'pending' } | { status: 'completed'; tenant: unknown }
 
-export default function OnboardingPage() {
-  const router = useRouter()
+/**
+ * Segundo paso del registro: datos del negocio. Llegan acá el link de
+ * verificación de email, el login social de una cuenta nueva y cualquier
+ * usuario con sesión que todavía no tiene organización.
+ */
+function Onboarding() {
+  const router       = useRouter()
+  const searchParams = useSearchParams()
   const { data: session, isPending: sessionLoading } = useSession()
 
   const [checking, setChecking] = useState(true)
-  const [name, setName] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (sessionLoading) return
 
     if (!session) {
-      router.replace('/auth/sign-in')
+      // Un link de verificación vencido o inválido vuelve acá con ?error=…
+      // y sin sesión: se avisa en el login en vez de rebotar en silencio.
+      router.replace(searchParams.get('error') ? '/auth/sign-in?error=verify' : '/auth/sign-in')
       return
     }
 
@@ -39,32 +43,26 @@ export default function OnboardingPage() {
         }
       })
       .catch(() => setChecking(false))
-  }, [session, sessionLoading, router])
+  }, [session, sessionLoading, router, searchParams])
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-
+  async function handleSubmit(values: BusinessProfileValues): Promise<string | null> {
     try {
       const res = await fetch(`${API_URL}/api/onboarding`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(toRequestBody(values)),
       })
 
       if (!res.ok) {
         const body = await res.json().catch(() => null) as { error?: string } | null
-        throw new Error(body?.error ?? 'No se pudo crear la organización')
+        return body?.error ?? 'No se pudo crear la organización'
       }
 
       router.push('/app')
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'No se pudo crear la organización'
-      setError(msg)
-    } finally {
-      setLoading(false)
+      return null
+    } catch {
+      return 'No se pudo conectar con el servidor. Revisá tu conexión.'
     }
   }
 
@@ -74,30 +72,24 @@ export default function OnboardingPage() {
 
   return (
     <>
-      <h1 className="auth-title">Creá tu organización</h1>
-      <p className="auth-subtitle">Así es como tu equipo va a ver el espacio de trabajo.</p>
+      <h1 className="auth-title">Contanos sobre tu negocio</h1>
+      <p className="auth-subtitle">
+        Con estos datos Plata se adapta a cómo vendés. Te lleva un minuto y lo podés cambiar después.
+      </p>
 
-      {error && (
-        <Alert variant="destructive" className="mb-2">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="auth-field">
-          <Label htmlFor="name">Nombre de la organización</Label>
-          <Input
-            id="name" name="name" type="text"
-            placeholder="Mi Empresa SRL"
-            required minLength={2} autoComplete="organization"
-            value={name} onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-
-        <Button type="submit" className="mt-2 w-full" disabled={loading}>
-          {loading ? 'Creando…' : 'Continuar'}
-        </Button>
-      </form>
+      <BusinessProfileForm
+        initial={toFormValues('', null)}
+        submitLabel="Continuar"
+        onSubmit={handleSubmit}
+      />
     </>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense>
+      <Onboarding />
+    </Suspense>
   )
 }

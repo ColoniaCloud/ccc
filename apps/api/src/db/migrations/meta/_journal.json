@@ -64,6 +64,13 @@
       "when": 1785173646866,
       "tag": "0008_single_org_and_tenant_status",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791743632353,
+      "tag": "0009_business_profile",
+      "breakpoints": true
     }
   ]
 }

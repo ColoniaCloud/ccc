@@ -9,7 +9,7 @@ export default function OnboardingLayout({ children }: { children: ReactNode }) 
       <div className="auth-brand">
         <Logo height={34} priority />
       </div>
-      <Card className="w-full max-w-[400px] gap-0 p-8 shadow-md">
+      <Card className="w-full max-w-[560px] gap-0 p-8 shadow-md">
         {children}
       </Card>
     </div>

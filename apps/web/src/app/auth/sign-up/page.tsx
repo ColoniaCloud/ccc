@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signUp, authErrorMessage } from '@/lib/auth'
+import { signUp, authErrorMessage, webUrl } from '@/lib/auth'
+import { SocialButtons } from '@/components/SocialButtons'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -25,12 +26,17 @@ export default function SignUpPage() {
     const password = form.get('password') as string
 
     try {
-      const { error: signUpError } = await signUp.email({ name, email, password })
+      // Con verificación obligatoria el registro no inicia sesión: llega un
+      // correo cuyo link verifica, inicia sesión y vuelve al onboarding.
+      const { error: signUpError } = await signUp.email({
+        name, email, password,
+        callbackURL: webUrl('/onboarding'),
+      })
       if (signUpError) {
         setError(authErrorMessage(signUpError, 'Error al crear la cuenta'))
         return
       }
-      router.push('/onboarding')
+      router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
     } catch {
       setError('No se pudo conectar con el servidor. Revisá tu conexión.')
     } finally {
@@ -48,6 +54,8 @@ export default function SignUpPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      <SocialButtons />
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-field">

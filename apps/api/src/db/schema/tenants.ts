@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import type { Plan, Locale, TenantStatus } from '@crm/shared'
+import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import type { Plan, Locale, TenantStatus, BusinessProfile } from '@crm/shared'
 
 export const tenants = pgTable('tenants', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -10,6 +10,10 @@ export const tenants = pgTable('tenants', {
   locale: text('locale').notNull().default('es-UY').$type<Locale>(),
   status: text('status').notNull().default('active').$type<TenantStatus>(),
   suspendedAt: timestamp('suspended_at'),
+  // Perfil del negocio del onboarding (memoria base para la IA). Null en las
+  // organizaciones creadas antes de que existiera el formulario.
+  businessProfile: jsonb('business_profile').$type<BusinessProfile>(),
+  businessProfileUpdatedAt: timestamp('business_profile_updated_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
