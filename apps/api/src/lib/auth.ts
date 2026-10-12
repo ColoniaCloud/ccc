@@ -5,6 +5,7 @@ import { user, session, account, verification } from '../db/schema/auth'
 import { getAllowedOrigins } from './origins'
 import { sendEmail } from './email'
 import { verificationEmail, resetPasswordEmail } from './email-templates'
+import { withWebCallback } from './web-callback'
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error('BETTER_AUTH_SECRET no está definida. Verificá apps/api/.env')
@@ -48,6 +49,7 @@ const socialProviders = {
 
 export const enabledSocialProviders = Object.keys(socialProviders)
 
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   // Los links de los correos (verificación, contraseña) apuntan a la API, que
@@ -77,7 +79,7 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     expiresIn: 60 * 60 * 24,
     sendVerificationEmail: async ({ user, url }) => {
-      await sendEmail(verificationEmail({ to: user.email, name: user.name, url }))
+      await sendEmail(verificationEmail({ to: user.email, name: user.name, url: withWebCallback(url) }))
     },
   },
   socialProviders,
