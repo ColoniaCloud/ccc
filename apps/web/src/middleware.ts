@@ -19,6 +19,8 @@ const MARKETING_PATHS: Record<string, string> = {
   '/modulos':      '/marketing/modulos',
   '/precios':      '/marketing/precios',
   '/contacto':     '/marketing/contacto',
+  '/pdp':          '/marketing/pdp',
+  '/cds':          '/marketing/cds',
 }
 
 export function middleware(request: NextRequest) {
@@ -42,5 +44,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/herramientas', '/modulos', '/precios', '/contacto', '/admin/:path*'],
+  matcher: ['/', '/herramientas', '/modulos', '/precios', '/contacto', '/pdp', '/cds', '/admin/:path*'],
 }

@@ -149,3 +149,16 @@
   font-weight: normal;
   color: var(--color-text-tertiary);
 }
+
+.auth-legal {
+  margin-top: var(--spacing-4);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  text-align: center;
+  color: var(--color-text-tertiary);
+}
+
+.auth-legal a {
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+}

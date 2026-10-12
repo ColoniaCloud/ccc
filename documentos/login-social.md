@@ -78,6 +78,8 @@ nadie esperando un correo que no sale.
    - Logo: subir `apps/web/public/isologo.svg` exportado a PNG (Google exige
      PNG/JPG, no SVG).
    - Authorized domains: `plata.studio`.
+   - Privacy policy: `https://plata.studio/pdp` · Terms of service:
+     `https://plata.studio/cds` (Google las exige para pasar la app a producción).
    - Scopes: dejar solo los no sensibles por defecto — `email`, `profile`,
      `openid`. No hace falta pedir nada más.
    - Test users: mientras la app esté en modo "Testing", agregar los emails
@@ -184,8 +186,7 @@ Cuando se retome:
    → Create App** → caso de uso **"Authenticate and request data from users
    with Facebook Login"** → tipo **Consumer**.
 2. **App settings → Basic**: App domains `plata.studio`; Privacy Policy URL
-   `https://plata.studio/privacidad` (tiene que existir y ser pública);
-   Terms URL; categoría; ícono 1024×1024. Copiar **App ID** y **App Secret**.
+   `https://plata.studio/pdp`; Terms of Service URL `https://plata.studio/cds`; categoría; ícono 1024×1024. Copiar **App ID** y **App Secret**.
 3. **Facebook Login → Settings → Valid OAuth Redirect URIs**:
    `https://api.plata.studio/api/auth/callback/facebook`. Activar **Enforce
    HTTPS** y **Use Strict Mode for redirect URIs**.

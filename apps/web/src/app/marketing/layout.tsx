@@ -32,6 +32,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       {children}
 
       <footer className="mkt-footer">
+        <nav className="mkt-footer-links" aria-label="Legales">
+          <Link href="/pdp">Política de privacidad</Link>
+          <Link href="/cds">Condiciones del servicio</Link>
+        </nav>
         &copy; {new Date().getFullYear()} Plata. Todos los derechos reservados.
       </footer>
     </div>

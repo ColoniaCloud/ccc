@@ -272,3 +272,66 @@
   flex-direction: column;
   gap: var(--spacing-1);
 }
+
+/* ── Páginas legales (/pdp, /cds) ────────────────────────────── */
+
+.mkt-legal {
+  max-width: 720px;
+  margin: 0 auto;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.mkt-legal h1 {
+  color: var(--color-text);
+  margin-bottom: var(--spacing-2);
+}
+
+.mkt-legal h2 {
+  color: var(--color-text);
+  font-size: var(--font-size-lg, 1.125rem);
+  margin: var(--spacing-8) 0 var(--spacing-3);
+}
+
+.mkt-legal p,
+.mkt-legal ul {
+  margin-bottom: var(--spacing-3);
+}
+
+.mkt-legal ul {
+  padding-left: var(--spacing-6);
+  list-style: disc;
+}
+
+.mkt-legal li {
+  margin-bottom: var(--spacing-2);
+}
+
+.mkt-legal strong {
+  color: var(--color-text);
+}
+
+.mkt-legal a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.mkt-legal-meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+.mkt-legal-intro {
+  margin-top: var(--spacing-6);
+}
+
+.mkt-footer-links {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-2);
+}
+
+.mkt-footer-links a {
+  color: var(--color-text-secondary);
+}

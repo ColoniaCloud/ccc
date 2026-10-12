@@ -90,6 +90,12 @@ export default function SignUpPage() {
         </Button>
       </form>
 
+      <p className="auth-legal">
+        Al crear tu cuenta aceptás las{' '}
+        <a href="https://plata.studio/cds" target="_blank" rel="noopener noreferrer">Condiciones del servicio</a> y la{' '}
+        <a href="https://plata.studio/pdp" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.
+      </p>
+
       <div className="auth-link-row">
         ¿Ya tenés cuenta? <Link href="/auth/sign-in">Iniciá sesión</Link>
       </div>
