@@ -335,3 +335,18 @@
 .mkt-footer-links a {
   color: var(--color-text-secondary);
 }
+
+.mkt-legal code {
+  font-size: 0.9em;
+  padding: 0 0.25em;
+  border-radius: 4px;
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.mkt-legal-translation {
+  margin: var(--spacing-4) 0;
+  padding: var(--spacing-4);
+  border-left: 3px solid var(--color-border-strong);
+  font-size: var(--font-size-sm);
+}
