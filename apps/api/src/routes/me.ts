@@ -9,6 +9,7 @@ import type { HonoVariables } from '../types'
 const meRoutes = new Hono<{ Variables: HonoVariables }>()
 
 meRoutes.get('/', authMiddleware, tenantMiddleware, async (c) => {
+  c.header('Cache-Control', 'no-store')
   const db       = c.get('db')
   const user     = c.get('user')
   const tenantId = c.get('tenantId')

@@ -37,11 +37,11 @@ Next.js (`apps/web`), sin separar por subdominio de tenant todavía.
   schema-per-tenant al principio del proyecto (ver ARCHITECTURE.md
   original) pero se optó por el modelo más simple de fila-por-tenant,
   reforzado con Row-Level Security como defensa en profundidad (ver abajo).
-- **Un usuario pertenece a una sola organización** (`members.user_id` es
-  unique a nivel DB desde la migración `0008_single_org_and_tenant_status`).
-  No hay selector de organización en el front — si en el futuro hace falta
-  que un usuario pertenezca a varios tenants, hay que levantar esa
-  restricción y agregar el switcher, no es el modelo actual.
+- **Un usuario puede pertenecer a varias organizaciones** (migración `0010_multi_org_and_team`).
+  `members` tiene unique `(user_id, tenant_id)`, roles independientes por organización y
+  un único `owner` por tenant. El selector recuerda la elección por usuario en este navegador;
+  cambiar de organización descarta la pantalla anterior y vuelve a cargar `/api/me`.
+  Cada cuenta conserva su propia sesión; los usuarios se suman por invitación a su email verificado.
 - **Row-Level Security** (migración `0007_enable_rls_tenant_isolation`):
   las 11 tablas del CRM core (`contacts`, `deals`, `tasks`, `pipelines`,
   `pipeline_stages`, `tags`, `contact_tags`, `custom_field_definitions`,
@@ -91,7 +91,8 @@ Next.js (`apps/web`), sin separar por subdominio de tenant todavía.
 ```
 PostgreSQL (schema "public", un solo schema)
 ├── tenants
-├── members              (userId ↔ tenantId, un usuario = un tenant)
+├── members              (userId ↔ tenantId, múltiples organizaciones por usuario)
+├── organization_invitations (email verificado + token hash + vencimiento + RLS)
 ├── plans / billing_*    (fuera del alcance de RLS, ver arriba)
 └── contacts, deals, tasks, pipelines, tags, ...   (tenant_id + RLS)
 ```
@@ -104,6 +105,22 @@ La identificación del tenant se resuelve en `tenantMiddleware`
 Con el slug resuelto, se busca el tenant y se valida la membership del
 usuario autenticado (sesión de Better Auth) contra `members`. Recién ahí
 se abre la transacción con RLS (`withTenant`) para el resto del request.
+
+Las operaciones de identidad/equipo (`/api/organizations`) usan la conexión owner porque
+deben resolver membresías antes de disponer de contexto RLS, igual que el onboarding.
+Cada operación por organización valida la membresía y el estado bajo un lock del tenant.
+Las invitaciones guardan solo SHA-256 del token, vencen en siete días y se aceptan con
+sesión y email verificado coincidente. El secreto viaja en el fragmento del link del correo
+y en el body de POST, nunca en URLs de API. Una aceptación repetida no duplica ni cambia roles.
+El destinatario autenticado también puede recuperar y aceptar sus invitaciones pendientes
+por ID tras verificar su email, sin depender de la pestaña donde abrió el link original.
+Un constraint trigger diferido impide dejar un equipo sin propietario, incluso mediante
+borrado en cascada de una cuenta. Transferir la propiedad es una transacción atómica.
+
+Roles: owner administra todo; admin gestiona ajustes/billing y roles manager/seller/support;
+manager y seller trabajan en la cartera compartida; support tiene lectura del CRM.
+La restricción de support se verifica en tenantMiddleware. No hay todavía cartera privada
+por vendedor: la asignación/visibilidad granular se implementará como un alcance posterior.
 
 ---
 

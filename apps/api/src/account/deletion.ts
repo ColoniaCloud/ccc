@@ -44,6 +44,11 @@ export function decideAccountDeletion(facts: DeletionFacts): DeletionDecision {
     return { allowed: true, deletesOrganization: true, organizationName }
   }
 
+  if (membership.role === 'owner') {
+    return { allowed: false, organizationName,
+      reason: `Transferí la propiedad de ${organizationName ?? 'tu organización'} antes de eliminar tu cuenta.` }
+  }
+
   if (membership.role === 'admin' && membership.otherAdmins === 0) {
     return {
       allowed: false,

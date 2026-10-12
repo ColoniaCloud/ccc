@@ -55,6 +55,11 @@ export const tenantMiddleware = createMiddleware<{
 
   c.set('tenantId', tenant.id)
   c.set('memberId', member.id)
+  c.set('memberRole', member.role)
+
+  if (member.role === 'support' && !['GET', 'HEAD', 'OPTIONS'].includes(c.req.method)) {
+    throw new HTTPException(403, { message: 'Tu rol tiene acceso de lectura al CRM' })
+  }
 
   // set_config con is_local=true equivale a SET LOCAL pero acepta bind
   // params — SET LOCAL no admite placeholders del protocolo de Postgres.

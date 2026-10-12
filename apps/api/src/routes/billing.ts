@@ -82,7 +82,7 @@ billingRoutes.post('/checkout', authMiddleware, tenantMiddleware, async (c) => {
   const user     = c.get('user')
 
   const member = await db.query.members.findFirst({ where: eq(members.id, memberId) })
-  if (!member || member.role !== 'admin') {
+  if (!member || !['owner', 'admin'].includes(member.role)) {
     throw new HTTPException(403, { message: 'Solo un admin puede gestionar la suscripción' })
   }
 
@@ -156,7 +156,7 @@ billingRoutes.post('/cancel', authMiddleware, tenantMiddleware, async (c) => {
   const memberId = c.get('memberId')
 
   const member = await db.query.members.findFirst({ where: eq(members.id, memberId) })
-  if (!member || member.role !== 'admin') {
+  if (!member || !['owner', 'admin'].includes(member.role)) {
     throw new HTTPException(403, { message: 'Solo un admin puede gestionar la suscripción' })
   }
 

@@ -44,7 +44,7 @@ export default function ModulesSettingsPage() {
     }
   }
 
-  const isAdmin = me.member.role === 'admin'
+  const isAdmin = ['owner', 'admin'].includes(me.member.role)
 
   return (
     <div>

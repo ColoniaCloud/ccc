@@ -45,7 +45,7 @@ export default function BusinessSettingsPage() {
     }
   }
 
-  const isAdmin = me.member.role === 'admin'
+  const isAdmin = ['owner', 'admin'].includes(me.member.role)
 
   return (
     <div style={{ maxWidth: 560 }}>

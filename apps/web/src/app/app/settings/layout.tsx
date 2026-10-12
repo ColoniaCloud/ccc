@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import './settings.css'
 
 const SETTINGS_NAV = [
+  { href: '/app/settings/team',          label: 'Equipo' },
   { href: '/app/settings/business',      label: 'Negocio' },
   { href: '/app/settings/modules',       label: 'Módulos' },
   { href: '/app/settings/custom-fields', label: 'Campos personalizados' },

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signUp, authErrorMessage, webUrl } from '@/lib/auth'
 import { SocialButtons } from '@/components/SocialButtons'
+import { pendingInvitation } from '@/lib/organizations'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,7 @@ export default function SignUpPage() {
       // correo cuyo link verifica, inicia sesión y vuelve al onboarding.
       const { error: signUpError } = await signUp.email({
         name, email, password,
-        callbackURL: webUrl('/onboarding'),
+        callbackURL: webUrl(pendingInvitation() ? '/auth/invitation' : '/onboarding'),
       })
       if (signUpError) {
         setError(authErrorMessage(signUpError, 'Error al crear la cuenta'))

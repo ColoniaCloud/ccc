@@ -39,6 +39,17 @@ function layout(params: { title: string; intro: string; cta: string; url: string
 </html>`
 }
 
+export function organizationInvitationEmail(params: { to: string; organizationName: string; inviterName: string; url: string }): EmailMessage {
+  const intro = `${params.inviterName} te invitó a trabajar en ${params.organizationName} en Plata.`
+  return {
+    to: params.to,
+    subject: `Invitación a ${params.organizationName} en Plata`,
+    html: layout({ title: 'Sumate al equipo', intro: escapeHtml(intro), cta: 'Ver invitación', url: params.url,
+      outro: 'El link vence en 7 días. Ingresá o registrate con el email que recibió este correo. Si no esperabas esta invitación, ignorala.' }),
+    text: `${intro}\n\n${params.url}\n\nIngresá o registrate con ${params.to}. El link vence en 7 días.`,
+  }
+}
+
 export function verificationEmail(params: { to: string; name: string; url: string }): EmailMessage {
   const name = params.name.trim().split(/\s+/)[0] ?? ''
   return {
@@ -84,7 +95,7 @@ export function resetPasswordEmail(params: { to: string; url: string }): EmailMe
 
 export function deleteAccountEmail(params: { to: string; url: string; organizationName: string | null; deletesOrganization: boolean }): EmailMessage {
   const what = params.deletesOrganization && params.organizationName
-    ? `tu cuenta y la organización «${params.organizationName}» con todos sus datos (contactos, oportunidades, tareas y configuración)`
+    ? `tu cuenta y las organizaciones donde sos el único miembro: «${params.organizationName}», con todos sus datos (contactos, oportunidades, tareas y configuración)`
     : 'tu cuenta'
   return {
     to:      params.to,

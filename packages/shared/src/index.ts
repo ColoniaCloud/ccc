@@ -6,7 +6,18 @@ export type BillingProvider = 'mercadopago' | 'nowpayments'
 
 export type SubscriptionStatus = 'pending' | 'active' | 'paused' | 'cancelled'
 
-export type UserRole = 'admin' | 'manager' | 'seller' | 'support'
+export type UserRole = 'owner' | 'admin' | 'manager' | 'seller' | 'support'
+
+export type InvitableRole = Exclude<UserRole, 'owner'>
+
+export interface OrganizationSummary {
+  id: string
+  name: string
+  slug: string
+  plan: Plan
+  status: TenantStatus
+  role: UserRole
+}
 
 export type Locale = 'es-UY' | 'es-AR' | 'es-CL' | 'pt-BR'
 

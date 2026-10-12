@@ -53,7 +53,7 @@ export const enabledSocialProviders = Object.keys(socialProviders)
 
 // beforeDelete → afterDelete del mismo request: qué organización borrar una
 // vez eliminado el usuario.
-const pendingTenantDeletions = new Map<string, string>()
+const pendingTenantDeletions = new Map<string, string[]>()
 
 
 export const auth = betterAuth({
@@ -117,14 +117,14 @@ export const auth = betterAuth({
         if (!plan.allowed) {
           throw new APIError('BAD_REQUEST', { message: plan.reason, code: 'ACCOUNT_DELETION_BLOCKED' })
         }
-        if (plan.deletesOrganization && plan.tenantId) pendingTenantDeletions.set(user.id, plan.tenantId)
+        if (plan.tenantIds.length) pendingTenantDeletions.set(user.id, plan.tenantIds)
       },
       // El usuario ya no existe (y sus membresías, sesiones y cuentas se
       // fueron en cascada): recién ahora se borra la organización que quedó vacía.
       afterDelete: async (user) => {
-        const tenantId = pendingTenantDeletions.get(user.id)
+        const tenantIds = pendingTenantDeletions.get(user.id) ?? []
         pendingTenantDeletions.delete(user.id)
-        if (tenantId) await deleteTenantIfEmpty(tenantId)
+        for (const tenantId of tenantIds) await deleteTenantIfEmpty(tenantId)
       },
     },
   },

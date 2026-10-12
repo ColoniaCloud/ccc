@@ -33,7 +33,7 @@ modulesRoutes.get('/', async (c) => {
 
 async function requireAdmin(db: TenantTx, memberId: string) {
   const member = await db.query.members.findFirst({ where: eq(members.id, memberId) })
-  if (!member || member.role !== 'admin') {
+  if (!member || !['owner', 'admin'].includes(member.role)) {
     throw new HTTPException(403, { message: 'Solo un admin puede gestionar los módulos' })
   }
 }

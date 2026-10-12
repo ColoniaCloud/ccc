@@ -103,7 +103,7 @@ export default function BillingPage() {
     }
   }
 
-  const isAdmin               = me.member.role === 'admin'
+  const isAdmin               = ['owner', 'admin'].includes(me.member.role)
   const currentPlan           = status?.plan ?? me.tenant.plan
   const hasActiveSubscription = status?.subscription?.status === 'active'
 

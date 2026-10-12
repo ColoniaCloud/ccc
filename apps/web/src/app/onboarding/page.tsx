@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from '@/lib/auth'
+import { pendingInvitation, rememberOrganization } from '@/lib/organizations'
 import {
   BusinessProfileForm, toFormValues, toRequestBody, type BusinessProfileValues,
 } from '@/components/BusinessProfileForm'
@@ -22,6 +23,7 @@ function Onboarding() {
   const { data: session, isPending: sessionLoading } = useSession()
 
   const [checking, setChecking] = useState(true)
+  const additional = searchParams.get('new') === '1'
 
   useEffect(() => {
     if (sessionLoading) return
@@ -32,10 +34,19 @@ function Onboarding() {
       router.replace(searchParams.get('error') ? '/auth/sign-in?error=verify' : '/auth/sign-in')
       return
     }
+    if (pendingInvitation()) { router.replace('/auth/invitation'); return }
+    if (additional) { setChecking(false); return }
 
-    fetch(`${API_URL}/api/onboarding/status`, { credentials: 'include' })
-      .then((res) => res.json() as Promise<StatusResponse>)
+    fetch(`${API_URL}/api/organizations/invitations`, { credentials: 'include' })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('No se pudieron consultar tus invitaciones')
+        const data = await res.json() as { items: unknown[] }
+        if (data.items.length) { router.replace('/auth/invitation'); return null }
+        return fetch(`${API_URL}/api/onboarding/status`, { credentials: 'include' })
+      })
+      .then((res) => res ? res.json() as Promise<StatusResponse> : null)
       .then((data) => {
+        if (!data) return
         if (data.status === 'completed') {
           router.replace('/app')
         } else {
@@ -43,7 +54,7 @@ function Onboarding() {
         }
       })
       .catch(() => setChecking(false))
-  }, [session, sessionLoading, router, searchParams])
+  }, [session, sessionLoading, router, searchParams, additional])
 
   async function handleSubmit(values: BusinessProfileValues): Promise<string | null> {
     try {
@@ -51,7 +62,7 @@ function Onboarding() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(toRequestBody(values)),
+        body: JSON.stringify({ ...toRequestBody(values), createAdditional: additional }),
       })
 
       if (!res.ok) {
@@ -59,7 +70,9 @@ function Onboarding() {
         return body?.error ?? 'No se pudo crear la organización'
       }
 
-      router.push('/app')
+      const data = await res.json() as { tenant: { slug: string } }
+      rememberOrganization(session!.user.id, data.tenant.slug)
+      router.push(`/app?organization=${encodeURIComponent(data.tenant.slug)}`)
       return null
     } catch {
       return 'No se pudo conectar con el servidor. Revisá tu conexión.'

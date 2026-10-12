@@ -33,7 +33,7 @@ businessProfileRoutes.put('/', async (c) => {
   const tenantId = c.get('tenantId')
 
   const member = await db.query.members.findFirst({ where: eq(members.id, c.get('memberId')) })
-  if (!member || member.role !== 'admin') {
+  if (!member || !['owner', 'admin'].includes(member.role)) {
     throw new HTTPException(403, { message: 'Solo un admin puede editar los datos del negocio' })
   }
 

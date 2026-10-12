@@ -12,6 +12,7 @@ export type HonoVariables = {
   session:  AuthSession
   tenantId: string
   memberId: string
+  memberRole: Member['role']
   // Db acotada al tenant actual: transacción con `app.tenant_id` seteado,
   // sujeta a las políticas RLS de la migración 0007. La setea tenantMiddleware.
   db:       TenantTx

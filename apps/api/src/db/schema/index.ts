@@ -1,6 +1,7 @@
 export * from './auth'
 export * from './tenants'
 export * from './members'
+export * from './organization-invitations'
 export * from './contacts'
 export * from './pipelines'
 export * from './deals'

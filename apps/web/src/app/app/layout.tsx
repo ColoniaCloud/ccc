@@ -17,9 +17,11 @@ import {
   Settings01Icon,
   UserShield01Icon,
 } from '@hugeicons/core-free-icons'
-import type { ModuleKey } from '@crm/shared'
+import type { ModuleKey, OrganizationSummary } from '@crm/shared'
 import { useSession, signOut } from '@/lib/auth'
 import { Logo } from '@/components/Logo'
+import { OrganizationSwitcher } from '@/components/OrganizationSwitcher'
+import { activeOrganization, pendingInvitation, rememberOrganization } from '@/lib/organizations'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,10 +38,6 @@ import { AppProvider, type Me } from './app-context'
 import './app.css'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
-
-type StatusResponse =
-  | { status: 'pending' }
-  | { status: 'completed'; tenant: { id: string; name: string; slug: string } | null }
 
 type NavItem = {
   href: string
@@ -92,6 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isPending: sessionLoading } = useSession()
 
   const [me, setMe] = useState<Me | null>(null)
+  const [organizations, setOrganizations] = useState<OrganizationSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -140,17 +139,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const statusRes = await fetch(`${API_URL}/api/onboarding/status`, { credentials: 'include' })
-        const statusData = await statusRes.json() as StatusResponse
-
-        if (statusData.status === 'pending' || !statusData.tenant) {
+        if (pendingInvitation()) {
+          if (!cancelled) router.replace('/auth/invitation')
+          return
+        }
+        const orgRes = await fetch(`${API_URL}/api/organizations`, { credentials: 'include', cache: 'no-store' })
+        if (!orgRes.ok) throw new Error('No se pudieron cargar tus organizaciones')
+        const { items } = await orgRes.json() as { items: OrganizationSummary[] }
+        if (!cancelled) setOrganizations(items)
+        if (!items.length) {
           if (!cancelled) router.replace('/onboarding')
           return
         }
+        const preferred = new URLSearchParams(window.location.search).get('organization') ?? activeOrganization(session!.user.id)
+        const organization = items.find((org) => org.slug === preferred && org.status === 'active')
+          ?? items.find((org) => org.status === 'active') ?? items[0]!
+        rememberOrganization(session!.user.id, organization.slug)
 
         const meRes = await fetch(`${API_URL}/api/me`, {
           credentials: 'include',
-          headers: { 'x-tenant-slug': statusData.tenant.slug },
+          headers: { 'x-tenant-slug': organization.slug },
         })
         if (!meRes.ok) {
           const body = await meRes.json().catch(() => null) as { error?: string } | null
@@ -202,13 +210,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <p className="form-error">{error ?? 'No se pudo cargar la cuenta'}</p>
           </div>
           <Button variant="outline" onClick={handleSignOut}>Cerrar sesión</Button>
+          {session && <OrganizationSwitcher organizations={organizations} userId={session.user.id} />}
         </div>
       </div>
     )
   }
 
   return (
-    <AppProvider me={me}>
+    <AppProvider me={me} key={me.tenant.id}>
       <div className={`app-shell app-shell--with-sidebar${sidebarCollapsed ? ' app-shell--collapsed' : ''}`}>
         {mobileOpen && (
           <button
@@ -328,7 +337,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <strong>{currentItem?.label ?? 'Plata'}</strong>
               </div>
             </div>
-            <Badge variant="outline">Plan {formatPlan(me.tenant.plan)}</Badge>
+            <div className="flex min-w-0 items-center gap-2">
+              <OrganizationSwitcher organizations={organizations} userId={me.user.id} activeSlug={me.tenant.slug} />
+              <Badge variant="outline" className="hidden sm:inline-flex">Plan {formatPlan(me.tenant.plan)}</Badge>
+            </div>
           </header>
 
           <main className="app-main app-main--scroll">

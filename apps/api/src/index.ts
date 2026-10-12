@@ -21,6 +21,7 @@ import { accountRoutes } from './routes/account'
 import { enabledSocialProviders } from './lib/auth'
 import { getAllowedOrigins } from './lib/origins'
 import { getSuperAdminEmails } from './lib/superadmin'
+import { organizationsRoutes } from './routes/organizations'
 
 const app = new Hono()
 
@@ -54,6 +55,7 @@ app.get('/api/auth-providers', (c) => c.json({ status: 'ok', providers: enabledS
 
 app.route('/api/auth', authRoutes)
 app.route('/api/me', meRoutes)
+app.route('/api/organizations', organizationsRoutes)
 app.route('/api/onboarding', onboardingRoutes)
 app.route('/api/contacts', contactsRoutes)
 app.route('/api/pipelines', pipelinesRoutes)

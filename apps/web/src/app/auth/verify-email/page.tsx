@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { sendVerificationEmail, webUrl } from '@/lib/auth'
+import { pendingInvitation } from '@/lib/organizations'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
@@ -21,7 +22,7 @@ function VerifyEmailNotice() {
   async function handleResend() {
     if (!email) return
     setStatus('sending')
-    const { error } = await sendVerificationEmail({ email, callbackURL: webUrl('/onboarding') })
+    const { error } = await sendVerificationEmail({ email, callbackURL: webUrl(pendingInvitation() ? '/auth/invitation' : '/onboarding') })
     setStatus(error ? 'error' : 'sent')
   }
 

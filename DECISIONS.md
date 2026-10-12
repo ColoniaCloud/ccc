@@ -3,6 +3,22 @@
 Registro de decisiones técnicas con fecha y justificación.
 Formato: contexto → decisión → razón.
 
+## 2026-10-12 — Organizaciones múltiples y equipos
+
+La decisión single-org de julio queda reemplazada por múltiples membresías por usuario.
+Cada organización mantiene su propia suscripción, roles y datos. El creador es owner;
+se migra el admin más antiguo de cada organización existente a owner sin quitar miembros.
+El propietario puede transferir la propiedad; los administradores no pueden escalar
+roles ni modificar otros administradores. Las invitaciones expiran en siete días y
+requieren el email verificado del destinatario. Reinvitar invalida el token anterior.
+
+La eliminación de cuenta evalúa todas las organizaciones. Un owner con equipo debe
+transferir antes; una organización que quedaría vacía requiere cancelar primero las
+suscripciones activas/pausadas. El resto de las organizaciones se conserva.
+
+El código de producción se genera en Linux como standalone; los builds en Windows
+usan el formato estándar de Next para evitar los permisos especiales de symlinks.
+
 ---
 
 ## 2026-05-30 — Turborepo sobre Nx

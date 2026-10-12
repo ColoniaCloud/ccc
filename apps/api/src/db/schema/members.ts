@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, uuid, unique } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, uuid, unique, uniqueIndex, check } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { user } from './auth'
 import { tenants } from './tenants'
 import type { UserRole } from '@crm/shared'
@@ -10,12 +11,9 @@ export const members = pgTable('members', {
   role: text('role').notNull().default('seller').$type<UserRole>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
-  // Un usuario pertenece a una sola organización (decisión 2026-07-26,
-  // ver DECISIONS.md) — antes el unique era compuesto (userId, tenantId),
-  // lo que en teoría permitía múltiples memberships por usuario aunque
-  // el onboarding ya lo bloqueaba en código. Esto lo hace una garantía
-  // real de la base de datos, no solo de la capa de aplicación.
-  userUnique: unique().on(table.userId),
+  userTenantUnique: unique().on(table.userId, table.tenantId),
+  ownerUnique: uniqueIndex('members_one_owner_per_tenant').on(table.tenantId).where(sql`${table.role} = 'owner'`),
+  validRole: check('members_valid_role', sql`${table.role} in ('owner', 'admin', 'manager', 'seller', 'support')`),
 }))
 
 export type Member = typeof members.$inferSelect

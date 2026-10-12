@@ -1,7 +1,7 @@
 import { db } from './index'
 import { tenants, members } from './schema'
 import { user } from './schema/auth'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 async function seed() {
   console.log('Seeding...')
@@ -36,9 +36,12 @@ async function seed() {
       console.error('No se pudo encontrar ni crear el tenant demo')
       process.exit(1)
     }
+    const existingOwner = await db.query.members.findFirst({
+      where: and(eq(members.tenantId, existingTenant.id), eq(members.role, 'owner')),
+    })
     await db
       .insert(members)
-      .values({ userId: testUser.id, tenantId: existingTenant.id, role: 'admin' })
+      .values({ userId: testUser.id, tenantId: existingTenant.id, role: existingOwner ? 'seller' : 'owner' })
       .onConflictDoNothing()
     console.log('Member creado para tenant existente')
     process.exit(0)
@@ -46,7 +49,7 @@ async function seed() {
 
   await db
     .insert(members)
-    .values({ userId: testUser.id, tenantId: tenant.id, role: 'admin' })
+    .values({ userId: testUser.id, tenantId: tenant.id, role: 'owner' })
     .onConflictDoNothing()
 
   console.log('Seed completo.')

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signIn, authErrorMessage } from '@/lib/auth'
 import { SocialButtons } from '@/components/SocialButtons'
+import { pendingInvitation } from '@/lib/organizations'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -55,6 +56,7 @@ function SignInForm() {
         return
       }
 
+      if (pendingInvitation()) { router.push('/auth/invitation'); return }
       // Determinar destino según estado de onboarding
       const res = await fetch(`${API_URL}/api/onboarding/status`, {
         credentials: 'include',

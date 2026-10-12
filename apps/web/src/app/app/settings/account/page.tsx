@@ -82,8 +82,8 @@ export default function AccountSettingsPage() {
             <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', lineHeight: 1.6, marginBottom: 'var(--spacing-3)' }}>
               {preview.deletesOrganization && preview.organizationName ? (
                 <>
-                  Sos el único miembro de <strong>{preview.organizationName}</strong>, así que se va a eliminar tu cuenta
-                  y también la organización con todos sus datos: contactos, oportunidades, tareas, pipelines, etiquetas y
+                  Se va a eliminar tu cuenta y las organizaciones donde sos el único miembro:
+                  {' '}<strong>{preview.organizationName}</strong>, con todos sus datos: contactos, oportunidades, tareas, pipelines, etiquetas y
                   configuración.
                 </>
               ) : (

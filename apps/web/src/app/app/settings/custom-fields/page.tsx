@@ -55,7 +55,7 @@ export default function CustomFieldsSettingsPage() {
     load().catch(() => setError('No se pudieron cargar los campos'))
   }, [apiFetch])
 
-  const isAdmin = me.member.role === 'admin'
+  const isAdmin = ['owner', 'admin'].includes(me.member.role)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

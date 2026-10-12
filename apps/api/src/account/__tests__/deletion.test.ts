@@ -4,6 +4,12 @@ import { decideAccountDeletion } from '../deletion'
 const solo = { role: 'admin', otherMembers: 0, otherAdmins: 0 }
 
 describe('decideAccountDeletion', () => {
+  it('el propietario debe transferir antes de borrar su cuenta aunque haya otros admins', () => {
+    const result = decideAccountDeletion({ membership: { role: 'owner', otherMembers: 2, otherAdmins: 1 },
+      organizationName: 'Acme', hasPaidSubscription: false })
+    expect(result.allowed).toBe(false)
+    if (!result.allowed) expect(result.reason).toMatch(/Transferí/)
+  })
   it('sin organización borra solo el usuario', () => {
     expect(decideAccountDeletion({ membership: null, organizationName: null, hasPaidSubscription: false }))
       .toEqual({ allowed: true, deletesOrganization: false, organizationName: null })
