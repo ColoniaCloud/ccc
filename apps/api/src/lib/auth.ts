@@ -1,10 +1,12 @@
 import { betterAuth } from 'better-auth'
+import { APIError } from 'better-auth/api'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from '../db'
 import { user, session, account, verification } from '../db/schema/auth'
 import { getAllowedOrigins } from './origins'
 import { sendEmail } from './email'
-import { verificationEmail, resetPasswordEmail } from './email-templates'
+import { verificationEmail, resetPasswordEmail, deleteAccountEmail } from './email-templates'
+import { planAccountDeletion, deleteTenantIfEmpty } from '../account/deletion-service'
 import { withWebCallback } from './web-callback'
 
 if (!process.env.BETTER_AUTH_SECRET) {
@@ -49,6 +51,10 @@ const socialProviders = {
 
 export const enabledSocialProviders = Object.keys(socialProviders)
 
+// beforeDelete → afterDelete del mismo request: qué organización borrar una
+// vez eliminado el usuario.
+const pendingTenantDeletions = new Map<string, string>()
+
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
@@ -80,6 +86,46 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24,
     sendVerificationEmail: async ({ user, url }) => {
       await sendEmail(verificationEmail({ to: user.email, name: user.name, url: withWebCallback(url) }))
+    },
+  },
+  user: {
+    // Eliminar cuenta (Configuración → Mi cuenta). Siempre con confirmación por
+    // email, también para cuentas de Google/Microsoft que no tienen contraseña.
+    // El link del correo lleva a /auth/delete-account en la web, que pide la
+    // confirmación final con la sesión iniciada (el callback de Better Auth
+    // exige sesión y responde JSON crudo si algo falla).
+    deleteUser: {
+      enabled: true,
+      deleteTokenExpiresIn: 60 * 60,
+      sendDeleteAccountVerification: async ({ user, token }) => {
+        const plan = await planAccountDeletion(user.id)
+        if (!plan.allowed) {
+          throw new APIError('BAD_REQUEST', { message: plan.reason, code: 'ACCOUNT_DELETION_BLOCKED' })
+        }
+        const webUrl = (process.env.WEB_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
+        await sendEmail(deleteAccountEmail({
+          to:                  user.email,
+          url:                 `${webUrl}/auth/delete-account?token=${encodeURIComponent(token)}`,
+          organizationName:    plan.organizationName,
+          deletesOrganization: plan.deletesOrganization,
+        }))
+      },
+      // Se vuelve a evaluar al confirmar: entre el pedido y el click pudo
+      // haberse activado una suscripción o haber cambiado la organización.
+      beforeDelete: async (user) => {
+        const plan = await planAccountDeletion(user.id)
+        if (!plan.allowed) {
+          throw new APIError('BAD_REQUEST', { message: plan.reason, code: 'ACCOUNT_DELETION_BLOCKED' })
+        }
+        if (plan.deletesOrganization && plan.tenantId) pendingTenantDeletions.set(user.id, plan.tenantId)
+      },
+      // El usuario ya no existe (y sus membresías, sesiones y cuentas se
+      // fueron en cascada): recién ahora se borra la organización que quedó vacía.
+      afterDelete: async (user) => {
+        const tenantId = pendingTenantDeletions.get(user.id)
+        pendingTenantDeletions.delete(user.id)
+        if (tenantId) await deleteTenantIfEmpty(tenantId)
+      },
     },
   },
   socialProviders,

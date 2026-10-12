@@ -17,6 +17,7 @@ import { customFieldsRoutes } from './routes/custom-fields'
 import { contactRoutes } from './routes/contact'
 import { adminRoutes } from './routes/admin'
 import { businessProfileRoutes } from './routes/business-profile'
+import { accountRoutes } from './routes/account'
 import { enabledSocialProviders } from './lib/auth'
 import { getAllowedOrigins } from './lib/origins'
 import { getSuperAdminEmails } from './lib/superadmin'
@@ -65,6 +66,7 @@ app.route('/api/custom-fields', customFieldsRoutes)
 app.route('/api/contact', contactRoutes)
 app.route('/api/admin', adminRoutes)
 app.route('/api/business-profile', businessProfileRoutes)
+app.route('/api/account', accountRoutes)
 
 // El panel de administración depende de una env var: sin ella el 403 es
 // idéntico al de un usuario sin permisos, así que un panel inaccesible por

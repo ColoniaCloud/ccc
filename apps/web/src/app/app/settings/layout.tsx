@@ -8,6 +8,7 @@ const SETTINGS_NAV = [
   { href: '/app/settings/business',      label: 'Negocio' },
   { href: '/app/settings/modules',       label: 'Módulos' },
   { href: '/app/settings/custom-fields', label: 'Campos personalizados' },
+  { href: '/app/settings/account',       label: 'Mi cuenta' },
 ]
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

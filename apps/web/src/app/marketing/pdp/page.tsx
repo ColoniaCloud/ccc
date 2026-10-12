@@ -84,8 +84,9 @@ export default function PoliticaPrivacidadPage() {
           cifradas y acceso restringido.
         </li>
         <li>
-          <strong>Cómo eliminarlos:</strong> podés pedir la eliminación de tu cuenta y de estos datos escribiendo a{' '}
-          <ContactEmail />; los borramos en un plazo máximo de 30 días. También podés quitarle el acceso a{' '}
+          <strong>Cómo eliminarlos:</strong> podés eliminar tu cuenta y estos datos en cualquier momento desde{' '}
+          <em>Configuración → Mi cuenta</em>, o pedirlo escribiendo a <ContactEmail /> (lo resolvemos en un plazo máximo
+          de 30 días). También podés quitarle el acceso a{' '}
           {LEGAL.service} en cualquier momento desde{' '}
           <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">
             la configuración de tu cuenta de Google
@@ -112,7 +113,8 @@ export default function PoliticaPrivacidadPage() {
           authenticate you and display your name and picture inside the app. We do not access any other Google data, we do
           not sell it, use it for advertising, share it with third parties or use it to train AI models. It is stored in
           our database (Neon, São Paulo, Brazil) over encrypted connections. You can request deletion at any time by writing
-          to <ContactEmail /> (deleted within 30 days) and revoke access at{' '}
+          to <ContactEmail /> (deleted within 30 days) or directly from <em>Settings → My account</em> (Configuración → Mi
+          cuenta), and revoke access at{' '}
           <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">
             myaccount.google.com/permissions
           </a>.
@@ -159,8 +161,9 @@ export default function PoliticaPrivacidadPage() {
 
       <h2>8. Cuánto tiempo los guardamos</h2>
       <p>
-        Mientras tu cuenta esté activa. Si la eliminás, borramos tus datos y los de tu organización en un plazo de
-        30 días, salvo los que debamos conservar por obligaciones legales o fiscales, durante el plazo que esas
+        Mientras tu cuenta esté activa. Podés eliminarla desde <em>Configuración → Mi cuenta</em>: al confirmar
+        borramos en el momento tu cuenta y, si sos el único miembro, tu organización con todos sus datos. Si nos lo
+        pedís por email lo hacemos en un plazo máximo de 30 días. Conservamos solo los datos que debamos guardar por obligaciones legales o fiscales, durante el plazo que esas
         normas exijan. Las copias de seguridad se eliminan en su ciclo normal de rotación.
       </p>
 

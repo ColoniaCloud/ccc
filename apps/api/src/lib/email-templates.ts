@@ -81,3 +81,28 @@ export function resetPasswordEmail(params: { to: string; url: string }): EmailMe
     ].join('\n'),
   }
 }
+
+export function deleteAccountEmail(params: { to: string; url: string; organizationName: string | null; deletesOrganization: boolean }): EmailMessage {
+  const what = params.deletesOrganization && params.organizationName
+    ? `tu cuenta y la organización «${params.organizationName}» con todos sus datos (contactos, oportunidades, tareas y configuración)`
+    : 'tu cuenta'
+  return {
+    to:      params.to,
+    subject: 'Confirmá la eliminación de tu cuenta de Plata',
+    html: layout({
+      title: 'Confirmá la eliminación de tu cuenta',
+      intro: `Pediste eliminar ${escapeHtml(what)}. Esta acción no se puede deshacer.`,
+      cta:   'Revisar y confirmar',
+      url:   params.url,
+      outro: 'El link vence en 1 hora y tenés que abrirlo en un navegador donde hayas iniciado sesión en Plata. Si no lo pediste, ignorá este correo y cambiá tu contraseña: tu cuenta sigue igual.',
+    }),
+    text: [
+      `Pediste eliminar ${what}. Esta acción no se puede deshacer.`,
+      '',
+      'Para confirmar, abrí este link en un navegador donde hayas iniciado sesión en Plata:',
+      params.url,
+      '',
+      'El link vence en 1 hora. Si no lo pediste, ignorá este correo y cambiá tu contraseña.',
+    ].join('\n'),
+  }
+}
