@@ -85,6 +85,13 @@
       "when": 1791851712367,
       "tag": "0011_niche_catalogs_and_presets",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791854115082,
+      "tag": "0012_anthropic_onboarding",
+      "breakpoints": true
     }
   ]
 }

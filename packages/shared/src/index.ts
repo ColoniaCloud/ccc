@@ -46,6 +46,24 @@ export type PresetKey = 'real_estate_sale' | 'real_estate_rent' | 'automotive_sa
 export type AppointmentKind = 'property_visit' | 'test_drive'
 export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled'
 
+export type SetupStatus = 'in_progress' | 'ready' | 'completed' | 'deferred'
+export type SetupMessage = { role: 'user' | 'assistant'; text: string }
+export type SetupProposal = {
+  summary: string
+  presets: PresetKey[]
+  recommendations: string[]
+  connections: { tool: string; purpose: string }[]
+}
+export type SetupTurn = { reply: string; proposal: SetupProposal | null }
+export type SetupSnapshot = {
+  name: string
+  profile: BusinessProfile | null
+  required: boolean
+  supported: boolean
+  configured: boolean
+  session: { status: SetupStatus; revision: number; messages: SetupMessage[]; proposal: SetupProposal | null; busy: boolean } | null
+}
+
 export interface PresetPreview {
   key: PresetKey
   version: number

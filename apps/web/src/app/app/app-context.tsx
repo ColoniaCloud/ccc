@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useMemo, type ReactNode } from 
 
 export type Me = {
   user:   { id: string; name: string; email: string; isSuperAdmin: boolean }
-  tenant: { id: string; name: string; slug: string; plan: string; modules: string[] }
+  tenant: { id: string; name: string; slug: string; plan: string; modules: string[]; setupRequired?: boolean }
   member: { id: string; role: string }
 }
 

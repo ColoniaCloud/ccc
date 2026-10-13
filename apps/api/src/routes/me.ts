@@ -44,6 +44,7 @@ meRoutes.get('/', authMiddleware, tenantMiddleware, async (c) => {
       slug:    tenant?.slug,
       plan:    tenant?.plan,
       modules: enabledModules.map((m) => m.moduleKey),
+      setupRequired: tenant?.setupRequired ?? false,
     },
     member: {
       id:   member?.id,

@@ -66,6 +66,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: '/app/billing', label: 'Facturación', icon: CreditCardIcon },
       { href: '/app/settings', label: 'Configuración', icon: Settings01Icon },
+      { href: '/app/setup', label: 'Asistente', icon: Contact01Icon },
       { href: '/admin', label: 'Administración', icon: UserShield01Icon, superAdmin: true },
     ],
   },
@@ -174,6 +175,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (!cancelled) {
           setMe(meData)
           setLoading(false)
+          if (meData.tenant.setupRequired && ['owner','admin'].includes(meData.member.role) && window.location.pathname !== '/app/setup') router.replace('/app/setup')
         }
       } catch (loadError: unknown) {
         if (!cancelled) {

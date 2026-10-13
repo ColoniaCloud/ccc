@@ -67,7 +67,7 @@ onboardingRoutes.post('/', authMiddleware, async (c) => {
     // INSERT ON CONFLICT evita la carrera entre consultar un slug e insertarlo.
     for (let suffix = 0; suffix < 100; suffix++) {
       const [created] = await tx.insert(tenants).values({ name, slug: suffix ? `${base}-${suffix}` : base,
-        locale: localeForCountry(profile.country), businessProfile: profile, businessProfileUpdatedAt: new Date() })
+        locale: localeForCountry(profile.country), businessProfile: profile, businessProfileUpdatedAt: new Date(), setupRequired: true })
         .onConflictDoNothing({ target: tenants.slug }).returning()
       if (!created) continue
       await tx.insert(members).values({ userId: user.id, tenantId: created.id, role: 'owner' })

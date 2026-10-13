@@ -153,7 +153,34 @@ Las mutaciones de campos/módulos y la creación del pipeline por defecto compar
 Las pantallas `/app/properties`, `/app/vehicles` y sus fichas usan el módulo y el rol para
 mostrar acciones. `/app/settings/presets` permite revisar/aprobar; `/app/pipeline` selecciona
 entre varios procesos y crea oportunidades con activo y responsable. Este motor aún no
-realiza llamadas a Anthropic ni conexiones externas.
+realiza conexiones externas; la tercera entrega usa este motor desde el onboarding.
+
+## Asistente de onboarding
+
+`onboarding_sessions` guarda estado, revisión, conversación, propuesta, lease del pedido
+activo y consumo de tokens por tenant. `0012_anthropic_onboarding` agrega esta tabla con
+FORCE RLS y `tenants.setup_required` default false. El alta nueva lo marca true;
+completar o posponer limpia el indicador, sin obligar a repetir el proceso a equipos existentes.
+
+`/api/setup` usa `tenantAccessMiddleware` para resolver sesión, membresía y tenant, y luego
+`withTenant` en fases cortas del servicio. Preparar/reservar la generación y guardar su
+resultado son transacciones separadas: la llamada a Anthropic no retiene una conexión ni
+un lock de PostgreSQL. Antes y después se revalidan rol, suspensión y perfil. Un request ID
+impide que una respuesta tardía pise una conversación pospuesta o una generación posterior.
+
+La IA recibe el perfil del negocio, mensajes, propuesta actual y capacidades explícitas
+de catálogos/plantillas. Su única herramienta estructura preguntas/propuestas; no tiene
+acceso a SQL ni operaciones del CRM. Se valida la salida y se permiten únicamente presets
+del rubro. El cliente puede editar el resumen, procesos y plan de conexiones pendientes.
+La aprobación incluye revisión y SHA-256 del plan/perfil/configuración relevante. Todos los
+presets se aplican juntos; los campos compartidos se recalculan dentro de la transacción.
+
+Anthropic se inicializa con timeout 60 s y retries=0; hay una generación activa por tenant,
+lease 120 s y máximo técnico 20 llamadas por preparación. No se envían contactos ni datos
+de cartera en el contexto. La clave es server-only; `ANTHROPIC_ONBOARDING_MODEL` permite
+cambiar el modelo, con default `claude-haiku-5-5` verificado contra la cuenta.
+`/app/setup` permite conversar, posponer, retomar, revisar/aprobar y consultar el plan
+final. Las integraciones permanecen pendientes de un flujo de conexión posterior.
 
 ---
 

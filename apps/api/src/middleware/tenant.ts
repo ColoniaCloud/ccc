@@ -5,10 +5,9 @@ import { db } from '../db'
 import { tenantDb } from '../db/tenant-db'
 import { tenants, members } from '../db/schema'
 import type { HonoVariables } from '../types'
+import type { Context } from 'hono'
 
-export const tenantMiddleware = createMiddleware<{
-  Variables: HonoVariables
-}>(async (c, next) => {
+async function resolveTenantContext(c: Context<{ Variables: HonoVariables }>) {
   let slug = c.req.header('x-tenant-slug')
 
   if (!slug) {
@@ -61,10 +60,21 @@ export const tenantMiddleware = createMiddleware<{
     throw new HTTPException(403, { message: 'Tu rol tiene acceso de lectura al CRM' })
   }
 
+}
+
+// Los endpoints con llamadas a IA abren transacciones cortas en cada fase.
+export const tenantAccessMiddleware = createMiddleware<{ Variables: HonoVariables }>(async (c, next) => {
+  await resolveTenantContext(c)
+  await next()
+})
+
+export const tenantMiddleware = createMiddleware<{ Variables: HonoVariables }>(async (c, next) => {
+  await resolveTenantContext(c)
+
   // set_config con is_local=true equivale a SET LOCAL pero acepta bind
   // params — SET LOCAL no admite placeholders del protocolo de Postgres.
   await tenantDb.transaction(async (tx) => {
-    await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenant.id}, true)`)
+    await tx.execute(sql`SELECT set_config('app.tenant_id', ${c.get('tenantId')}, true)`)
     c.set('db', tx)
     await next()
   })

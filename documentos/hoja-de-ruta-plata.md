@@ -31,7 +31,7 @@ Los límites de usuarios por plan todavía no están definidos y esta entrega no
 
 ## Segunda entrega: catálogos y preconfiguraciones
 
-Implementada en `codex/niche-catalogs-and-presets`, para revisar localmente antes de publicar:
+Publicada en `main` y en el VPS, commit `713d0fd`:
 
 - Propiedades: venta/alquiler, tipo, ubicación, dormitorios, baños, superficie,
   precio/moneda, propietario y responsable.
@@ -56,19 +56,56 @@ Las plantillas las revisa/aplica el propietario o un administrador. Manager y se
 pueden trabajar en catálogos, oportunidades y citas; support conserva lectura.
 No hay carga de fotos, portal público, agenda global ni recordatorios automáticos todavía.
 Las plantillas se aplican manualmente desde Configuración → Preconfiguraciones;
-el asistente con Anthropic se construye sobre este motor en la siguiente entrega.
+El asistente con Anthropic utiliza este motor en la tercera entrega.
 
 Validación de esta entrega: 95 pruebas automatizadas, type-check y build del monorepo;
 PostgreSQL local con rol sin bypass y navegador real para aplicar las tres plantillas,
 editar/archivar/recuperar fichas, crear oportunidades, realizar/cancelar citas, comprobar
 aislamiento y lectura de support. Vista móvil verificada a 360 px. Datos exclusivamente
-de prueba, sin llamadas a Anthropic ni servicios externos.
+de prueba, sin llamadas a Anthropic ni servicios externos en esa entrega.
+
+Publicación verificada el 13 de octubre: [CI](https://github.com/ColoniaCloud/ccc/actions/runs/38331001082)
+y [Deploy VPS](https://github.com/ColoniaCloud/ccc/actions/runs/38331112462) exitosos;
+web/API saludables, hash de 0011 aplicado y FORCE RLS/permisos CRUD comprobados
+con `plata_app` sin superuser ni BYPASSRLS. Backup previo restaurado en una base
+descartable: `/root/backups/plata-20261013T011142Z-pre-niches/` (dump y bundle Git).
+
+## Tercera entrega: onboarding con Anthropic
+
+Implementada en `codex/anthropic-onboarding`, pendiente de publicación:
+
+- Primera visita de organizaciones nuevas: asistente para owner/admin. Las organizaciones
+  existentes conservan el acceso al CRM; pueden iniciar el asistente voluntariamente.
+- Usa el perfil del registro y preguntas adaptativas para inmobiliarias/automotor.
+  Conversación por organización, reanudación y opción de configurar después.
+- Propuesta editable: resumen, selección de procesos, acciones recomendadas y herramientas
+  pendientes. Revisión de cambios concretos antes de aprobar la configuración conjunta.
+- Reutiliza el motor de plantillas. Una aprobación vieja o un conflicto impide aplicar
+  cambios; todos los procesos se aplican juntos en una transacción, sin sobrescribir datos.
+- Las conexiones quedan pendientes. No se ejecutan mensajes, publicaciones, contratos,
+  operaciones financieras ni conexiones OAuth en esta entrega.
+- API de Anthropic exclusivamente desde el servidor, con `ANTHROPIC_API_KEY` y modelo
+  configurable `ANTHROPIC_ONBOARDING_MODEL` (default `claude-haiku-5-5`, disponible en
+  la cuenta verificada). SDK existente, sin nueva dependencia. El modelo debe admitir
+  tool_choice con herramienta nombrada: se exige responder con una propuesta estructurada.
+- Una llamada activa por organización, timeout de 60 s, lease de recuperación de 120 s,
+  sin reintentos automáticos y hasta 20 generaciones por preparación. Es un límite
+  técnico del piloto, no una cuota comercial por plan. Uso de tokens registrado.
+- Migración 0012 aditiva: sesiones con FORCE RLS y `setup_required=false` por defecto;
+  solo las altas nuevas lo marcan true. No obliga a equipos existentes a repetir onboarding.
+- 114 pruebas automatizadas, incluyendo protocolo de respuestas de Anthropic y PostgreSQL.
+  Prueba real en navegador con Anthropic para ambos nichos: alta, primera visita, preguntas,
+  propuesta, edición, reanudación, aprobación vencida, aplicación y móvil a 360 px.
+  Se enviaron exclusivamente perfiles y conversaciones ficticias de prueba.
+
+Antes de publicar: repetir type-check/build y preparar backup de ese momento. La API key
+no viaja al navegador ni se escribe en el repositorio. Las pruebas locales usan la clave
+en memoria del proceso y una base local separada de producción.
 
 ## Siguientes entregas
 
-1. Onboarding con Anthropic: preguntas adaptativas, propuesta editable basada en las
-   plantillas, aplicación validada/idempotente, reanudación y conexiones pendientes.
-   Reutilizar la API configurada en el entorno de Plata sin exponer claves al navegador.
+1. Piloto del onboarding: revisar finalización y primera operación con negocios reales;
+   ampliar plantillas/personalización según esas observaciones y definir cuotas por plan.
 2. Mejoras del catálogo según el piloto: fotos, agenda general y recordatorios;
    ampliar atributos y procesos a partir del uso real de inmobiliarias y automotor.
 3. MarketDeck v1: Instagram y páginas de Facebook, contenido aprobado, programación,
@@ -88,10 +125,10 @@ usuarios y cuotas de consumo de IA/integraciones; precios y límites quedan por 
 ## Publicación y revisión
 
 Ejecutar `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm type-check`, `pnpm build`.
-Antes de mergear la segunda entrega a main: backup recuperable de ese momento,
-revisión de 0011 y validación de permisos del rol de aplicación. El workflow de main
+Antes de mergear la tercera entrega a main: backup recuperable de ese momento,
+revisión de 0012 y validación de permisos del rol de aplicación. El workflow de main
 aplica migraciones y despliega automáticamente. El backup de la primera entrega se
 tomó después de publicarla y se verificó restaurándolo en una base descartable;
-no reemplaza un backup previo a la segunda entrega.
+no reemplaza el backup previo verificado de la segunda entrega ni uno previo a la tercera.
 La 0010 no debe revertirse volviendo al código single-org después de crear nuevas
 membresías: exige una corrección hacia adelante. No eliminar membresías para revertir.

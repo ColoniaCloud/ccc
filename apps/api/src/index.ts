@@ -24,6 +24,7 @@ import { getSuperAdminEmails } from './lib/superadmin'
 import { organizationsRoutes } from './routes/organizations'
 import { createCatalogRoutes } from './routes/catalogs'
 import { presetsRoutes } from './routes/presets'
+import { setupRoutes } from './routes/setup'
 
 const app = new Hono()
 
@@ -60,6 +61,7 @@ app.route('/api/me', meRoutes)
 app.route('/api/properties', createCatalogRoutes('properties'))
 app.route('/api/vehicles', createCatalogRoutes('vehicles'))
 app.route('/api/presets', presetsRoutes)
+app.route('/api/setup', setupRoutes)
 app.route('/api/organizations', organizationsRoutes)
 app.route('/api/onboarding', onboardingRoutes)
 app.route('/api/contacts', contactsRoutes)
