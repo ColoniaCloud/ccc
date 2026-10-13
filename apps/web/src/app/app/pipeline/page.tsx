@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import Link from 'next/link'
+import { CatalogAssetPicker } from '@/components/CatalogAssetPicker'
+import { loadContactOptions } from '@/lib/contact-options'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Add01Icon,
@@ -71,6 +74,11 @@ type Deal = {
   title: string
   value: string
   currency: string
+  propertyId: string | null
+  vehicleId: string | null
+  propertyTitle: string | null
+  vehicleTitle: string | null
+  assignedTo: string | null
 }
 
 type Contact = { id: string; name: string }
@@ -88,9 +96,12 @@ function formatValue(value: string, currency: string) {
 }
 
 export default function PipelinePage() {
-  const { apiFetch } = useApp()
+  const { apiFetch, me } = useApp()
+  const canWrite = me.member.role !== 'support'
 
   const [pipeline, setPipeline] = useState<Pipeline | null>(null)
+  const [pipelines, setPipelines] = useState<Pipeline[]>([])
+  const [members, setMembers] = useState<Contact[]>([])
   const [deals, setDeals] = useState<Deal[] | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [listError, setListError] = useState<string | null>(null)
@@ -105,6 +116,9 @@ export default function PipelinePage() {
   const [currency, setCurrency] = useState('USD')
   const [contactId, setContactId] = useState('none')
   const [stageId, setStageId] = useState('')
+  const [asset, setAsset] = useState('none')
+  const [assignedTo, setAssignedTo] = useState('none')
+  const activeStageId = pipeline?.stages.some((stage) => stage.id === stageId) ? stageId : pipeline?.stages[0]?.id ?? ''
 
   async function loadDeals() {
     const response = await apiFetch('/api/deals')
@@ -116,19 +130,31 @@ export default function PipelinePage() {
   useEffect(() => {
     async function load() {
       try {
-        const [pipelinesResponse, contactsResponse] = await Promise.all([
+        const [pipelinesResponse, contactItems, membersResponse] = await Promise.all([
           apiFetch('/api/pipelines'),
-          apiFetch('/api/contacts?pageSize=100&sort=name_asc'),
+          loadContactOptions(apiFetch),
+          apiFetch(`/api/organizations/${encodeURIComponent(me.tenant.slug)}/team`),
         ])
-        if (!pipelinesResponse.ok || !contactsResponse.ok) throw new Error('No se pudo cargar el pipeline')
+        if (!pipelinesResponse.ok || !membersResponse.ok) throw new Error('No se pudo cargar el pipeline')
 
         const pipelinesData = await pipelinesResponse.json() as { items: Pipeline[] }
-        const contactsData = await contactsResponse.json() as { items: Contact[] }
-        const activePipeline = pipelinesData.items[0] ?? null
+        const params = new URLSearchParams(window.location.search)
+        const activePipeline = pipelinesData.items.find((item) => item.id === params.get('pipelineId')) ?? pipelinesData.items[0] ?? null
 
+        setPipelines(pipelinesData.items)
+        setMembers((await membersResponse.json()).items)
         setPipeline(activePipeline)
         setStageId(activePipeline?.stages[0]?.id ?? '')
-        setContacts(contactsData.items)
+        setContacts(contactItems)
+        const kind = params.has('propertyId') ? 'properties' : params.has('vehicleId') ? 'vehicles' : null
+        if (kind && canWrite && me.tenant.modules.includes(kind)) {
+          const id = params.get(kind === 'properties' ? 'propertyId' : 'vehicleId')!
+          const assetRes = await apiFetch(`/api/${kind}/${id}`), assetData = await assetRes.json()
+          if (!assetRes.ok) throw new Error(assetData.error ?? 'No se pudo cargar la ficha')
+          if (!['available','reserved'].includes(assetData.item.status)) throw new Error('La ficha ya no está disponible')
+          setAsset(`${kind}:${id}`); setTitle(assetData.item.title); setValue(assetData.item.price ?? ''); setCurrency(assetData.item.currency)
+          setAssignedTo(assetData.item.assignedTo ?? 'none'); setCreateOpen(true)
+        }
         await loadDeals()
         setListError(null)
       } catch (loadError: unknown) {
@@ -138,7 +164,7 @@ export default function PipelinePage() {
     }
 
     load()
-  }, [apiFetch])
+  }, [apiFetch, canWrite, me.tenant.slug, me.tenant.modules])
 
   function resetForm() {
     setTitle('')
@@ -146,12 +172,14 @@ export default function PipelinePage() {
     setCurrency('USD')
     setContactId('none')
     setStageId(pipeline?.stages[0]?.id ?? '')
+    setAsset('none')
+    setAssignedTo('none')
     setFormError(null)
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!pipeline || !stageId) return
+    if (!pipeline || !activeStageId) return
 
     setFormError(null)
     setSubmitting(true)
@@ -162,10 +190,13 @@ export default function PipelinePage() {
         body: JSON.stringify({
           title,
           pipelineId: pipeline.id,
-          stageId,
+          stageId: activeStageId,
           value: value || undefined,
           currency,
           contactId: contactId === 'none' ? undefined : contactId,
+          propertyId: asset.startsWith('properties:') ? asset.split(':')[1] : null,
+          vehicleId: asset.startsWith('vehicles:') ? asset.split(':')[1] : null,
+          assignedTo: assignedTo === 'none' ? null : assignedTo,
         }),
       })
 
@@ -220,14 +251,14 @@ export default function PipelinePage() {
   }
 
   const summary = useMemo(() => {
-    const items = deals ?? []
+    const items = (deals ?? []).filter((deal) => deal.pipelineId === pipeline?.id)
     return {
       total: items.length,
       usdValue: items
         .filter((deal) => deal.currency === 'USD')
         .reduce((sum, deal) => sum + (Number(deal.value) || 0), 0),
     }
-  }, [deals])
+  }, [deals, pipeline?.id])
 
   return (
     <div className="page pipeline-page">
@@ -239,11 +270,13 @@ export default function PipelinePage() {
           </div>
           <p>Seguí cada oportunidad y mantené el proceso comercial en movimiento.</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} disabled={!pipeline?.stages.length}>
+        {canWrite && <Button onClick={() => setCreateOpen(true)} disabled={!pipeline?.stages.length}>
           <HugeiconsIcon icon={Add01Icon} strokeWidth={2} data-icon="inline-start" />
           Nueva oportunidad
-        </Button>
+        </Button>}
       </div>
+
+      {pipelines.length > 1 && <Field className="max-w-sm"><FieldLabel htmlFor="pipeline-selector">Proceso comercial</FieldLabel><Select value={pipeline?.id ?? ''} onValueChange={(id) => { const next = pipelines.find((item) => item.id === id)!; setPipeline(next); setStageId(next.stages[0]?.id ?? '') }}><SelectTrigger id="pipeline-selector" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectGroup>{pipelines.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectGroup></SelectContent></Select></Field>}
 
       {listError && (
         <Alert variant="destructive">
@@ -329,7 +362,7 @@ export default function PipelinePage() {
                       <CardHeader>
                         <CardTitle>{deal.title}</CardTitle>
                         <CardDescription>{deal.contactName ?? 'Sin contacto asociado'}</CardDescription>
-                        <CardAction>
+                        {canWrite && <CardAction>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon-sm" aria-label={`Acciones para ${deal.title}`}>
@@ -364,9 +397,12 @@ export default function PipelinePage() {
                               </DropdownMenuGroup>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </CardAction>
+                        </CardAction>}
                       </CardHeader>
-                      <CardContent><strong className="pipeline-deal-value">{formatValue(deal.value, deal.currency)}</strong></CardContent>
+                      <CardContent className="flex flex-col gap-2"><strong className="pipeline-deal-value">{formatValue(deal.value, deal.currency)}</strong>
+                        {(deal.propertyId || deal.vehicleId) && <Link className="text-sm underline" href={`/app/${deal.propertyId ? 'properties' : 'vehicles'}/${deal.propertyId ?? deal.vehicleId}`}>{deal.propertyTitle ?? deal.vehicleTitle ?? 'Abrir ficha'}</Link>}
+                        {deal.assignedTo && <p className="text-xs text-muted-foreground">{members.find((member) => member.id === deal.assignedTo)?.name ?? 'Sin responsable'}</p>}
+                      </CardContent>
                     </Card>
                   ))}
                 </CardContent>
@@ -385,6 +421,7 @@ export default function PipelinePage() {
           <form className="crm-sheet-form" onSubmit={handleSubmit}>
             <div className="crm-sheet-body">
               <FieldGroup>
+                {pipelines.length > 1 && <Field><FieldLabel htmlFor="deal-pipeline">Proceso comercial</FieldLabel><Select value={pipeline?.id ?? ''} onValueChange={(id) => { const next = pipelines.find((item) => item.id === id)!; setPipeline(next); setStageId(next.stages[0]?.id ?? '') }} disabled={submitting}><SelectTrigger id="deal-pipeline" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectGroup>{pipelines.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectGroup></SelectContent></Select></Field>}
                 <Field data-invalid={Boolean(formError && !title.trim())}>
                   <FieldLabel htmlFor="deal-title">Título</FieldLabel>
                   <Input
@@ -393,10 +430,12 @@ export default function PipelinePage() {
                     autoFocus
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
-                    placeholder="Licencia anual — Acme"
+                    placeholder="Interés comercial — cliente"
                     aria-invalid={Boolean(formError && !title.trim())}
                   />
                 </Field>
+                {me.tenant.modules.some((key) => key === 'properties' || key === 'vehicles') && <Field><FieldLabel htmlFor="deal-asset">Propiedad o vehículo</FieldLabel><CatalogAssetPicker value={asset} onChange={setAsset} disabled={submitting} /></Field>}
+                <Field><FieldLabel htmlFor="deal-assigned">Responsable</FieldLabel><Select value={assignedTo} onValueChange={setAssignedTo}><SelectTrigger id="deal-assigned" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="none">Sin asignar</SelectItem>{members.map((member) => <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>)}</SelectGroup></SelectContent></Select></Field>
                 <div className="crm-field-grid crm-field-grid--value">
                   <Field>
                     <FieldLabel htmlFor="deal-value">Valor</FieldLabel>
@@ -426,7 +465,7 @@ export default function PipelinePage() {
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="deal-stage">Etapa inicial</FieldLabel>
-                  <Select value={stageId} onValueChange={setStageId}>
+                  <Select key={pipeline?.id} value={activeStageId} onValueChange={(id) => { if (id) setStageId(id) }}>
                     <SelectTrigger id="deal-stage" className="w-full"><SelectValue placeholder="Elegí una etapa" /></SelectTrigger>
                     <SelectContent position="popper">
                       <SelectGroup>
@@ -440,7 +479,7 @@ export default function PipelinePage() {
             </div>
             <SheetFooter>
               <SheetClose asChild><Button type="button" variant="outline">Cancelar</Button></SheetClose>
-              <Button type="submit" disabled={submitting || !pipeline || !stageId}>{submitting ? 'Guardando…' : 'Crear oportunidad'}</Button>
+              <Button type="submit" disabled={submitting || !pipeline || !activeStageId}>{submitting ? 'Guardando…' : 'Crear oportunidad'}</Button>
             </SheetFooter>
           </form>
         </SheetContent>

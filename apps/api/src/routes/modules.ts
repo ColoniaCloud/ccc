@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { eq, and } from 'drizzle-orm'
-import { tenantModules, members } from '../db/schema'
+import { tenantModules, members, tenants } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
 import type { HonoVariables } from '../types'
@@ -33,7 +33,9 @@ modulesRoutes.get('/', async (c) => {
 
 async function requireAdmin(db: TenantTx, memberId: string) {
   const member = await db.query.members.findFirst({ where: eq(members.id, memberId) })
-  if (!member || !['owner', 'admin'].includes(member.role)) {
+  if (member) await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.id, member.tenantId)).for('update')
+  const current = await db.query.members.findFirst({ where: eq(members.id, memberId) })
+  if (!current || !['owner', 'admin'].includes(current.role)) {
     throw new HTTPException(403, { message: 'Solo un admin puede gestionar los módulos' })
   }
 }

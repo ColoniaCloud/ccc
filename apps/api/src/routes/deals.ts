@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { eq, and, desc } from 'drizzle-orm'
-import { deals, pipelines, pipelineStages, contacts } from '../db/schema'
+import { deals, pipelines, pipelineStages, contacts, properties, vehicles } from '../db/schema'
+import { validateDealCatalog, validateReferences } from '../catalogs/service'
+import { isUuid } from '../catalogs/validation'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
 import type { HonoVariables } from '../types'
@@ -16,9 +18,22 @@ type DealBody = Partial<{
   contactId: string | null
   value: string
   currency: DealCurrency
+  propertyId: string | null
+  vehicleId: string | null
+  assignedTo: string | null
 }>
 
 const dealsRoutes = new Hono<{ Variables: HonoVariables }>()
+
+function validateBody(body: DealBody | null) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new HTTPException(400, { message: 'Ingresá los datos de la oportunidad' })
+  if (body.title !== undefined && (typeof body.title !== 'string' || !body.title.trim() || body.title.length > 240)) throw new HTTPException(400, { message: 'Título inválido' })
+  if (body.value !== undefined && (typeof body.value !== 'string' || !/^\d+(?:\.\d{1,2})?$/.test(body.value) || Number(body.value) > 9999999999.99)) throw new HTTPException(400, { message: 'Valor inválido: ingresá hasta dos decimales y un importe menor a diez mil millones' })
+  if (body.currency !== undefined && !CURRENCIES.includes(body.currency)) throw new HTTPException(400, { message: 'Moneda inválida' })
+  for (const key of ['pipelineId','stageId','contactId','assignedTo','propertyId','vehicleId'] as const) {
+    if (body[key] != null && body[key] !== '' && !isUuid(body[key])) throw new HTTPException(400, { message: 'Identificador inválido' })
+  }
+}
 
 dealsRoutes.use('*', authMiddleware, tenantMiddleware)
 
@@ -38,9 +53,16 @@ dealsRoutes.get('/', async (c) => {
       createdAt:   deals.createdAt,
       updatedAt:   deals.updatedAt,
       contactName: contacts.name,
+      propertyId: deals.propertyId,
+      vehicleId: deals.vehicleId,
+      assignedTo: deals.assignedTo,
+      propertyTitle: properties.title,
+      vehicleTitle: vehicles.title,
     })
     .from(deals)
     .leftJoin(contacts, eq(deals.contactId, contacts.id))
+    .leftJoin(properties, and(eq(deals.propertyId, properties.id), eq(properties.tenantId, tenantId)))
+    .leftJoin(vehicles, and(eq(deals.vehicleId, vehicles.id), eq(vehicles.tenantId, tenantId)))
     .where(eq(deals.tenantId, tenantId))
     .orderBy(desc(deals.createdAt))
 
@@ -51,6 +73,7 @@ dealsRoutes.post('/', async (c) => {
   const db       = c.get('db')
   const tenantId = c.get('tenantId')
   const body = await c.req.json().catch(() => null) as DealBody | null
+  validateBody(body)
 
   const title = body?.title?.trim()
   if (!title) {
@@ -84,6 +107,9 @@ dealsRoutes.post('/', async (c) => {
   }
 
   const currency = body.currency && CURRENCIES.includes(body.currency) ? body.currency : 'USD'
+  await validateDealCatalog(db, tenantId, body.propertyId, body.vehicleId)
+  if (body.assignedTo && !isUuid(body.assignedTo)) throw new HTTPException(400, { message: 'Responsable inválido' })
+  await validateReferences(db, tenantId, { assignedTo: body.assignedTo })
 
   const [deal] = await db.insert(deals).values({
     tenantId,
@@ -93,6 +119,9 @@ dealsRoutes.post('/', async (c) => {
     title,
     value:      body.value?.trim() || '0',
     currency,
+    propertyId: body.propertyId || null,
+    vehicleId: body.vehicleId || null,
+    assignedTo: body.assignedTo || null,
   }).returning()
 
   return c.json({ status: 'ok', item: deal }, 201)
@@ -111,8 +140,20 @@ dealsRoutes.patch('/:id', async (c) => {
   }
 
   const body = await c.req.json().catch(() => null) as DealBody | null
+  validateBody(body)
 
   const patch: Record<string, unknown> = { updatedAt: new Date() }
+  if (body?.propertyId !== undefined || body?.vehicleId !== undefined) {
+    const propertyId = body.propertyId !== undefined ? body.propertyId || null : existing.propertyId
+    const vehicleId = body.vehicleId !== undefined ? body.vehicleId || null : existing.vehicleId
+    await validateDealCatalog(db, tenantId, propertyId, vehicleId)
+    patch.propertyId = propertyId; patch.vehicleId = vehicleId
+  }
+  if (body?.assignedTo !== undefined) {
+    if (body.assignedTo && !isUuid(body.assignedTo)) throw new HTTPException(400, { message: 'Responsable inválido' })
+    await validateReferences(db, tenantId, { assignedTo: body.assignedTo })
+    patch.assignedTo = body.assignedTo || null
+  }
 
   if (body?.title !== undefined) {
     const title = body.title.trim()

@@ -1,8 +1,10 @@
 import type { ModuleKey } from '@crm/shared'
 
-export const MODULE_KEYS = ['stock', 'service_periods'] as const
+export const MODULE_KEYS = ['stock', 'service_periods', 'properties', 'vehicles'] as const
 
 export const MODULE_CATALOG: Record<ModuleKey, { label: string; description: string }> = {
+  properties: { label: 'Propiedades', description: 'Catálogo inmobiliario, interesados y visitas vinculados a tus oportunidades.' },
+  vehicles: { label: 'Vehículos', description: 'Vehículos propios o consignados, compradores y pruebas de manejo.' },
   stock: {
     label: 'Stock',
     description: 'Catálogo de productos y control de inventario, vinculado a tus contactos.',

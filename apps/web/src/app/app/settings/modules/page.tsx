@@ -36,7 +36,7 @@ export default function ModulesSettingsPage() {
         throw new Error(body?.error ?? 'No se pudo actualizar el módulo')
       }
 
-      await load()
+      window.location.reload()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'No se pudo actualizar el módulo')
     } finally {

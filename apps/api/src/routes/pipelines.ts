@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { eq, inArray, asc } from 'drizzle-orm'
-import { pipelines, pipelineStages } from '../db/schema'
+import { pipelines, pipelineStages, tenants } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
 import type { HonoVariables } from '../types'
@@ -23,6 +23,8 @@ async function ensureDefaultPipeline(db: TenantTx, tenantId: string) {
     where: eq(pipelines.tenantId, tenantId),
   })
   if (existing) return
+  await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.id, tenantId)).for('update')
+  if (await db.query.pipelines.findFirst({ where: eq(pipelines.tenantId, tenantId) })) return
 
   const [pipeline] = await db.insert(pipelines).values({
     tenantId,

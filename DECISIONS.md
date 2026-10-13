@@ -3,6 +3,27 @@
 Registro de decisiones técnicas con fecha y justificación.
 Formato: contexto → decisión → razón.
 
+## 2026-10-12 — Catálogos propios y plantillas aditivas por nicho
+
+Propiedades y vehículos tienen tablas propias, vinculadas a contactos y oportunidades,
+con cartera compartida por organización. Una oportunidad enlaza como máximo un activo.
+Se archivan fichas para conservar su historial; una venta o alquiler no elimina citas ni
+oportunidades. Las referencias a activos incluyen tenant en la clave foránea para reforzar
+el aislamiento más allá de la validación HTTP y la RLS.
+
+Las plantillas de venta inmobiliaria, alquiler y venta automotriz son versionadas y se
+aplican después de revisar una vista previa. Agregan procesos independientes y campos
+opcionales; reutilizan definiciones compatibles y bloquean conflictos. La aprobación
+incluye una huella de la configuración para impedir aplicar una revisión desactualizada.
+La operación es atómica y repetirla conserva personalizaciones; una nueva versión necesita
+un flujo específico de actualización. El motor determinista precede al asistente Anthropic
+para que la IA proponga sobre operaciones validadas y acotadas.
+
+El stack visual actual usa shadcn/Radix, Tailwind 4 y Hugeicons sobre los tokens de Plata;
+la decisión inicial de React Aria y CSS exclusivo quedó superada por el código existente.
+
+---
+
 ## 2026-10-12 — Organizaciones múltiples y equipos
 
 La decisión single-org de julio queda reemplazada por múltiples membresías por usuario.

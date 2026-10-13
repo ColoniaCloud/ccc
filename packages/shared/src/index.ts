@@ -38,7 +38,27 @@ export type ContactStatus = 'lead' | 'prospect' | 'client' | 'inactive'
 
 export type DealCurrency = 'USD' | 'UYU' | 'ARS' | 'CLP' | 'BRL'
 
-export type ModuleKey = 'stock' | 'service_periods'
+export type ModuleKey = 'stock' | 'service_periods' | 'properties' | 'vehicles'
+
+export type CatalogKind = 'properties' | 'vehicles'
+export type CatalogStatus = 'available' | 'reserved' | 'sold' | 'rented' | 'archived'
+export type PresetKey = 'real_estate_sale' | 'real_estate_rent' | 'automotive_sales'
+export type AppointmentKind = 'property_visit' | 'test_drive'
+export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled'
+
+export interface PresetPreview {
+  key: PresetKey
+  version: number
+  label: string
+  module: CatalogKind
+  pipelineName: string
+  stages: string[]
+  fieldsToCreate: string[]
+  fieldsToReuse: string[]
+  conflicts: string[]
+  alreadyApplied: boolean
+  fingerprint: string
+}
 
 export type CustomFieldType = 'text' | 'number' | 'date' | 'boolean' | 'select'
 

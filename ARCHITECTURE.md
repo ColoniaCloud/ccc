@@ -19,8 +19,9 @@ Next.js (`apps/web`), sin separar por subdominio de tenant todavía.
 ### Frontend — `apps/web`
 - **Next.js 15** con App Router: RSC por defecto, streaming, layouts anidados
 - **React 19**: `use()`, Server Actions, concurrent features
-- **React Aria Components**: primitivos accesibles sin estilos forzados
-- **CSS custom properties**: design tokens en `theme.css`, sin dependencia de utilidades externas
+- **shadcn/ui + Radix**: componentes accesibles; Hugeicons para íconos.
+- **Tailwind 4 + CSS custom properties**: componentes nuevos con utilidades y
+  design tokens existentes; conviven con estilos de pantallas anteriores.
 
 ### Backend — `apps/api`
 - **Hono**: framework HTTP ultra-liviano, edge-ready, TypeScript nativo
@@ -121,6 +122,38 @@ Roles: owner administra todo; admin gestiona ajustes/billing y roles manager/sel
 manager y seller trabajan en la cartera compartida; support tiene lectura del CRM.
 La restricción de support se verifica en tenantMiddleware. No hay todavía cartera privada
 por vendedor: la asignación/visibilidad granular se implementará como un alcance posterior.
+
+## Catálogos y preconfiguraciones de nicho
+
+`properties` y `vehicles` son entidades del tenant separadas de `contacts`. El contacto
+de origen representa propietario/vendedor/consignante, y `assigned_to` al miembro responsable.
+`deals` puede enlazar un solo activo mediante `property_id` o `vehicle_id`; las claves
+foráneas compuestas `(tenant_id, activo_id)` impiden enlazar un activo de otra organización.
+`appointments` representa visitas/pruebas de manejo con exactamente un activo según `kind`.
+Eliminar un contacto o un miembro limpia su referencia, preservando fichas y citas.
+Los activos se archivan, sin borrado físico en la API; las relaciones y el historial permanecen.
+La validación de disponibilidad y el archivo bloquean la misma fila durante su transacción
+para evitar que una creación concurrente use una disponibilidad anterior.
+
+La migración `0011_niche_catalogs_and_presets` activa FORCE RLS y `tenant_isolation` en
+`properties`, `vehicles`, `appointments` y `tenant_presets`, y concede permisos CRUD al
+rol `plata_app` si existe. Las APIs usan siempre la transacción tenant, además de filtros
+explícitos y validación de contactos/responsables. Cada catálogo requiere su módulo activo.
+
+El catálogo versionado vive en `apps/api/src/presets/catalog.ts`. `/api/presets/:key/preview`
+calcula una propuesta y una huella SHA-256 del preset y la configuración relevante actual.
+`/:key/apply` exige esa huella, toma un lock del tenant, revalida owner/admin y aplica
+pipeline, etapas, campos opcionales, módulo y registro de aplicación en una sola transacción.
+Los campos compatibles se reutilizan y los conflictos bloquean la operación; nunca se
+reemplazan campos ni procesos existentes. `tenant_presets` tiene unique `(tenant_id,preset_key)`;
+reaplicar una versión instalada conserva las personalizaciones y no reactiva módulos.
+Una versión distinta requiere un flujo futuro de actualización revisada.
+Las mutaciones de campos/módulos y la creación del pipeline por defecto comparten el lock del tenant.
+
+Las pantallas `/app/properties`, `/app/vehicles` y sus fichas usan el módulo y el rol para
+mostrar acciones. `/app/settings/presets` permite revisar/aprobar; `/app/pipeline` selecciona
+entre varios procesos y crea oportunidades con activo y responsable. Este motor aún no
+realiza llamadas a Anthropic ni conexiones externas.
 
 ---
 

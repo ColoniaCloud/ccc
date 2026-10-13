@@ -12,6 +12,8 @@ import {
   CreditCardIcon,
   DashboardSquare01Icon,
   KanbanIcon,
+  Home01Icon,
+  Car01Icon,
   Logout01Icon,
   Menu01Icon,
   Settings01Icon,
@@ -53,6 +55,8 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: '/app', label: 'Resumen', icon: DashboardSquare01Icon },
       { href: '/app/contacts', label: 'Contactos', icon: Contact01Icon },
+      { href: '/app/properties', label: 'Propiedades', icon: Home01Icon, moduleKey: 'properties' },
+      { href: '/app/vehicles', label: 'Vehículos', icon: Car01Icon, moduleKey: 'vehicles' },
       { href: '/app/pipeline', label: 'Pipeline', icon: KanbanIcon },
       { href: '/app/tasks', label: 'Tareas', icon: CheckListIcon },
     ],
