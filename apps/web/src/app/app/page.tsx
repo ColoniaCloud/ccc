@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/card'
 import { useApp } from './app-context'
 import { SetupWelcome } from '@/components/SetupWelcome'
+import { ActivationGuide } from '@/components/ActivationGuide'
 
 type Contact = {
   id: string
@@ -193,6 +194,7 @@ export default function AppHomePage() {
         </div>
       </div>
 
+      <ActivationGuide />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>

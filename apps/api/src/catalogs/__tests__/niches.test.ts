@@ -13,6 +13,7 @@ import { saveCatalog, listCatalog, relatedCatalog, scheduleAppointment, changeAp
 import { editAppointment } from '../service'
 import { dayOnly, saveTask } from '../../agenda/tasks'
 import { agenda, localToday } from '../../agenda/service'
+import { activation } from '../../onboarding/activation'
 import { startConnection, consumeState, finishConnection, disconnect, syncConnection } from '../../calendar/service'
 import { CALENDAR_SCOPE, GoogleCalendar, GoogleError, protect, unprotect, eventBody, eventId } from '../../calendar/google'
 
@@ -418,5 +419,49 @@ describe('Google Calendar: autorización y sincronización', () => {
     await syncConnection(scoped, A, id, google); await due(id); await syncConnection(scoped, A, id, google)
     expect(save.mock.calls[0]![2]).not.toBe(save.mock.calls[1]![2])
     expect((await database.select().from(schema.calendarConnections))[0]?.status).toBe('connected')
+  })
+})
+
+describe('activación del piloto basada en datos actuales', () => {
+  const profile = { version: 1 as const, industry: 'real_estate' as const, industryOther: null, country: 'UY' as const, teamSize: '2-5' as const, offering: 'Venta y alquiler de propiedades.', salesChannels: ['whatsapp' as const], averageTicket: null, salesCycle: 'weeks' as const, mainGoal: 'follow_up' as const }
+  async function configure() { await database.update(schema.tenants).set({ businessProfile: profile }).where(eq(schema.tenants.id, A)); return apply() }
+  it('no fuerza el recorrido de los nichos piloto a otras organizaciones', async () => {
+    expect(await scoped(A, (tx) => activation(tx, A, OWNER))).toEqual({ supported: false })
+  })
+  it('las plantillas solas no prueban una operación; leer no agrega registros', async () => {
+    await configure()
+    const view = await scoped(A, (tx) => activation(tx, A, OWNER))
+    expect(view).toMatchObject({ supported: true, ready: false, complete: 2, total: 5 })
+    if (!view.supported) throw new Error('missing guide')
+    expect(view.steps.find(s=>s.key==='opportunity')?.complete).toBe(false)
+    expect(await database.select().from(schema.deals)).toHaveLength(0)
+    expect(await database.select().from(schema.calendarConnections)).toHaveLength(0)
+  })
+  it('exige ficha, interesado y seguimiento con fecha y responsable; una tarea sin fecha no alcanza', async () => {
+    const configured = await configure(), item = await scoped(A,(tx)=>saveCatalog(tx,A,'properties',property))
+    const [stage] = await database.select().from(schema.pipelineStages)
+    const [deal] = await database.insert(schema.deals).values({tenantId:A,pipelineId:configured.pipelineId!,stageId:stage!.id,contactId:CONTACT,propertyId:item.id,title:'Primera venta'}).returning()
+    const task = await scoped(A,tx=>saveTask(tx,A,{title:'Llamar',dealId:deal!.id,assignedTo:OWNER}))
+    expect(await scoped(A,tx=>activation(tx,A,OWNER))).toMatchObject({ready:false,complete:4})
+    await scoped(A,tx=>saveTask(tx,A,{dueOn:localToday()},task.id))
+    expect(await scoped(A,tx=>activation(tx,A,OWNER))).toMatchObject({ready:true,complete:5,calendar:{optional:true,connected:false,hasSyncedAppointment:false}})
+    await scoped(A,tx=>saveTask(tx,A,{done:true},task.id))
+    expect(await scoped(A,tx=>activation(tx,A,OWNER))).toMatchObject({ready:true})
+  })
+  it('una oportunidad cerrada conserva el avance aunque no queden próximos pasos abiertos', async () => {
+    const configured=await configure(),item=await scoped(A,tx=>saveCatalog(tx,A,'properties',property))
+    const stages=await database.select().from(schema.pipelineStages)
+    await database.insert(schema.deals).values({tenantId:A,pipelineId:configured.pipelineId!,stageId:stages.find(s=>s.outcome==='won')!.id,contactId:CONTACT,propertyId:item.id,title:'Venta cerrada'})
+    expect(await scoped(A,tx=>activation(tx,A,OWNER))).toMatchObject({ready:true,counts:{withoutFollowUp:0}})
+  })
+  it('Google es opcional, requiere prueba de evento y muestra solamente la conexión del miembro actual', async () => {
+    await configure()
+    const [connection]=await database.insert(schema.calendarConnections).values({tenantId:A,memberId:OWNER,status:'connected',lastSyncedAt:new Date()}).returning()
+    expect(await scoped(A,tx=>activation(tx,A,OWNER))).toMatchObject({calendar:{connected:true,hasSyncedAppointment:false}})
+    await database.insert(schema.calendarEventSync).values({tenantId:A,connectionId:connection!.id,appointmentId:CONTACT,fingerprint:'success'})
+    expect(await scoped(A,tx=>activation(tx,A,OWNER))).toMatchObject({calendar:{connected:true,hasSyncedAppointment:true}})
+    expect(await scoped(A,tx=>activation(tx,A,SELLER))).toMatchObject({calendar:{connected:false,hasSyncedAppointment:false}})
+    await database.update(schema.tenants).set({businessProfile:profile}).where(eq(schema.tenants.id,B))
+    expect(await scoped(B,tx=>activation(tx,B,OTHER))).toMatchObject({complete:1,counts:{inventory:0,linkedOpportunities:0},calendar:{connected:false}})
   })
 })
