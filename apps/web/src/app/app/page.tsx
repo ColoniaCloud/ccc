@@ -47,6 +47,7 @@ type Task = {
   id: string
   title: string
   dueDate: string | null
+  dueOn: string | null
   done: boolean
 }
 
@@ -78,11 +79,12 @@ function formatMoney(value: string, currency: string) {
 
 function formatDueDate(date: string | null) {
   if (!date) return 'Sin fecha'
-  return new Intl.DateTimeFormat('es-UY', { day: 'numeric', month: 'short' }).format(new Date(date))
+  return new Intl.DateTimeFormat('es-UY', { timeZone: 'UTC', day: 'numeric', month: 'short' }).format(new Date(`${date.slice(0, 10)}T12:00:00Z`))
 }
 
 function isOverdue(date: string | null) {
-  return Boolean(date && new Date(date).getTime() < Date.now())
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Montevideo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  return Boolean(date && date.slice(0, 10) < today)
 }
 
 export default function AppHomePage() {

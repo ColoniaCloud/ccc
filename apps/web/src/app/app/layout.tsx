@@ -58,7 +58,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: '/app/properties', label: 'Propiedades', icon: Home01Icon, moduleKey: 'properties' },
       { href: '/app/vehicles', label: 'Vehículos', icon: Car01Icon, moduleKey: 'vehicles' },
       { href: '/app/pipeline', label: 'Pipeline', icon: KanbanIcon },
-      { href: '/app/tasks', label: 'Tareas', icon: CheckListIcon },
+      { href: '/app/agenda', label: 'Agenda', icon: CheckListIcon },
     ],
   },
   {

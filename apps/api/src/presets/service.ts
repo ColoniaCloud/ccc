@@ -47,7 +47,7 @@ export async function applyPreset(db: TenantTx, tenantId: string, memberId: stri
   const existingPipeline = await db.query.pipelines.findFirst({ where: eq(pipelines.tenantId, tenantId) })
   const [pipeline] = await db.insert(pipelines).values({ tenantId, name: preset.pipelineName, isDefault: !existingPipeline }).returning()
   const colors = ['#58ACEE', '#7170C0', '#E8A838', '#58ACEE', '#7170C0', '#3AB98A', '#E5534B']
-  await db.insert(pipelineStages).values(preset.stages.map((name, position) => ({ pipelineId: pipeline!.id, name, position, color: colors[position]! })))
+  await db.insert(pipelineStages).values(preset.stages.map((name, position) => ({ pipelineId: pipeline!.id, name, position, color: colors[position]!, outcome: name === 'Ganado' ? 'won' as const : name === 'Perdido' ? 'lost' as const : 'open' as const })))
   for (const field of preset.fields) {
     await db.insert(customFieldDefinitions).values({ tenantId, entityType: 'contact', key: field.key,
       label: field.label, fieldType: field.fieldType, options: field.options ?? null, required: false })

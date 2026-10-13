@@ -40,6 +40,7 @@ async function ensureDefaultPipeline(db: TenantTx, tenantId: string) {
       name:       stage.name,
       color:      stage.color,
       position:   index,
+      outcome: stage.name === 'Ganado' ? 'won' as const : stage.name === 'Perdido' ? 'lost' as const : 'open' as const,
     })),
   )
 }

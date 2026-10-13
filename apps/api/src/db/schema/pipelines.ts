@@ -15,6 +15,7 @@ export const pipelineStages = pgTable('pipeline_stages', {
   name: text('name').notNull(),
   color: text('color').notNull().default('#7170C0'),
   position: integer('position').notNull().default(0),
+  outcome: text('outcome').notNull().default('open').$type<'open' | 'won' | 'lost'>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

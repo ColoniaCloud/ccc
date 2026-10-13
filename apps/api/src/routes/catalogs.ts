@@ -4,7 +4,7 @@ import type { CatalogKind } from '@crm/shared'
 import type { HonoVariables } from '../types'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
-import { listCatalog, saveCatalog, relatedCatalog, scheduleAppointment, changeAppointment } from '../catalogs/service'
+import { listCatalog, saveCatalog, relatedCatalog, scheduleAppointment, editAppointment } from '../catalogs/service'
 
 export function createCatalogRoutes(kind: CatalogKind) {
   const routes = new Hono<{ Variables: HonoVariables }>()
@@ -25,8 +25,7 @@ export function createCatalogRoutes(kind: CatalogKind) {
   routes.post('/:id/archive', async (c) => c.json({ status: 'ok', item: await saveCatalog(c.get('db'), c.get('tenantId'), kind, { status: 'archived' }, c.req.param('id')) }))
   routes.post('/:id/appointments', async (c) => c.json({ status: 'ok', item: await scheduleAppointment(c.get('db'), c.get('tenantId'), kind, c.req.param('id'), await c.req.json().catch(() => null)) }, 201))
   routes.patch('/:id/appointments/:appointmentId', async (c) => {
-    const body = await c.req.json().catch(() => null) as { status?: unknown } | null
-    return c.json({ status: 'ok', item: await changeAppointment(c.get('db'), c.get('tenantId'), kind, c.req.param('id'), c.req.param('appointmentId'), body?.status) })
+    return c.json({ status: 'ok', item: await editAppointment(c.get('db'), c.get('tenantId'), kind, c.req.param('id'), c.req.param('appointmentId'), await c.req.json().catch(() => null)) })
   })
   return routes
 }

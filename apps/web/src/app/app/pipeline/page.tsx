@@ -402,6 +402,7 @@ export default function PipelinePage() {
                       <CardContent className="flex flex-col gap-2"><strong className="pipeline-deal-value">{formatValue(deal.value, deal.currency)}</strong>
                         {(deal.propertyId || deal.vehicleId) && <Link className="text-sm underline" href={`/app/${deal.propertyId ? 'properties' : 'vehicles'}/${deal.propertyId ?? deal.vehicleId}`}>{deal.propertyTitle ?? deal.vehicleTitle ?? 'Abrir ficha'}</Link>}
                         {deal.assignedTo && <p className="text-xs text-muted-foreground">{members.find((member) => member.id === deal.assignedTo)?.name ?? 'Sin responsable'}</p>}
+                        {canWrite && <Button asChild variant="outline" size="sm"><Link href={`/app/agenda?newTask=1&dealId=${deal.id}`}>Planificar seguimiento</Link></Button>}
                       </CardContent>
                     </Card>
                   ))}

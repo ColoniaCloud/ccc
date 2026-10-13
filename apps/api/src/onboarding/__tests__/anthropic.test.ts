@@ -35,5 +35,7 @@ describe('protocolo de Anthropic y contexto del producto', () => {
     expect(prompt).toContain('No conectás herramientas')
     expect(prompt).toContain('No pidas contraseñas')
     expect(prompt).toContain('No son campos de la oportunidad')
+    expect(prompt).toContain('Una tarea vinculada a una oportunidad debe tener fecha')
+    expect(prompt).toContain('cada usuario debe autorizarlo')
   })
 })

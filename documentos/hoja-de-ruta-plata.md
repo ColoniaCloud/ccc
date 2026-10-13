@@ -72,7 +72,7 @@ descartable: `/root/backups/plata-20261013T011142Z-pre-niches/` (dump y bundle G
 
 ## Tercera entrega: onboarding con Anthropic
 
-Implementada en `codex/anthropic-onboarding`, pendiente de publicación:
+Publicada en `main` y en el VPS, merge `fc189f6` ([PR #1](https://github.com/ColoniaCloud/ccc/pull/1)):
 
 - Primera visita de organizaciones nuevas: asistente para owner/admin. Las organizaciones
   existentes conservan el acceso al CRM; pueden iniciar el asistente voluntariamente.
@@ -98,15 +98,43 @@ Implementada en `codex/anthropic-onboarding`, pendiente de publicación:
   propuesta, edición, reanudación, aprobación vencida, aplicación y móvil a 360 px.
   Se enviaron exclusivamente perfiles y conversaciones ficticias de prueba.
 
-Antes de publicar: repetir type-check/build y preparar backup de ese momento. La API key
-no viaja al navegador ni se escribe en el repositorio. Las pruebas locales usan la clave
-en memoria del proceso y una base local separada de producción.
+Publicación verificada el 13 de octubre: [CI](https://github.com/ColoniaCloud/ccc/actions/runs/38366347387)
+y [Deploy VPS](https://github.com/ColoniaCloud/ccc/actions/runs/38366519187) exitosos.
+Hash de 0012, FORCE RLS/permisos y rol de aplicación sin bypass comprobados.
+Backup previo restaurado: `/root/backups/plata-20261013T075951Z-pre-onboarding/`.
+La API key no viaja al navegador ni se escribe en el repositorio. Las pruebas locales
+usan la clave en memoria del proceso y una base local separada de producción.
+
+## Cuarta entrega: agenda y seguimiento
+
+Implementada en `codex/agenda-and-google-calendar`, pendiente de publicación:
+
+- Agenda compartida de tareas, visitas y pruebas de manejo. Filtros por responsable,
+  tipo y fechas; vencidos, historial y oportunidades sin próximo paso.
+- Tareas con contacto, oportunidad, responsable y vencimiento como fecha sin hora.
+  Acceso desde el pipeline para planificar el seguimiento, con datos precargados.
+- Citas con duración, reprogramación y reasignación; realización/cancelación.
+  La visita de otro interesado no oculta una oportunidad sin seguimiento.
+- Conector de Google Calendar por miembro: OAuth independiente del login, permiso
+  calendar.app.created, tokens cifrados, PKCE y estados consumibles una sola vez.
+- Sincronización de citas asignadas hacia un calendario propio de Plata, con leases,
+  ids estables, reintentos y cancelaciones. Sin invitados, mensajes ni datos de contactos.
+- Migración 0013 aditiva: fechas, duraciones, outcome de etapas, tres tablas de Calendar
+  con FORCE RLS, permisos de plata_app y relaciones por organización.
+- 140 pruebas automatizadas, incluyendo RLS, fechas y seguimiento, protocolo HTTP
+  de Google, revocación, respuestas tardías y recuperación de eventos. Navegador con
+  PostgreSQL local: alta/edición de tareas, seguimiento, reprogramación/cancelación,
+  lectura de support, aislamiento y vista móvil de 360 px.
+
+El código del conector está probado con respuestas HTTP simuladas. Habilitación
+de Google Cloud, clave de cifrado en el VPS y consentimiento con cuentas reales
+pendientes. Procedimiento y límites del piloto en [agenda-calendar.md](agenda-calendar.md).
 
 ## Siguientes entregas
 
 1. Piloto del onboarding: revisar finalización y primera operación con negocios reales;
    ampliar plantillas/personalización según esas observaciones y definir cuotas por plan.
-2. Mejoras del catálogo según el piloto: fotos, agenda general y recordatorios;
+2. Mejoras del catálogo según el piloto: fotos y recordatorios;
    ampliar atributos y procesos a partir del uso real de inmobiliarias y automotor.
 3. MarketDeck v1: Instagram y páginas de Facebook, contenido aprobado, programación,
    métricas y consultas vinculadas al CRM, sujeto a permisos y validación de APIs.
@@ -125,10 +153,10 @@ usuarios y cuotas de consumo de IA/integraciones; precios y límites quedan por 
 ## Publicación y revisión
 
 Ejecutar `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm type-check`, `pnpm build`.
-Antes de mergear la tercera entrega a main: backup recuperable de ese momento,
-revisión de 0012 y validación de permisos del rol de aplicación. El workflow de main
+Antes de mergear la cuarta entrega a main: backup recuperable de ese momento,
+revisión de 0013 y validación de permisos del rol de aplicación. El workflow de main
 aplica migraciones y despliega automáticamente. El backup de la primera entrega se
 tomó después de publicarla y se verificó restaurándolo en una base descartable;
-no reemplaza el backup previo verificado de la segunda entrega ni uno previo a la tercera.
+no reemplaza los backups previos verificados de las entregas siguientes.
 La 0010 no debe revertirse volviendo al código single-org después de crear nuevas
 membresías: exige una corrección hacia adelante. No eliminar membresías para revertir.
