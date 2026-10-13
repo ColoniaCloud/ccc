@@ -3,6 +3,25 @@
 Registro de decisiones técnicas con fecha y justificación.
 Formato: contexto → decisión → razón.
 
+## 2026-10-13 — Onboarding con propuestas validadas y transacciones cortas
+
+Anthropic pregunta y prepara un plan, pero no ejecuta cambios. La salida se valida contra
+el catálogo del rubro; owner/admin edita y aprueba una revisión concreta. La aprobación
+aplica todas las plantillas dentro de una transacción y conserva configuración existente.
+Las herramientas externas se registran como pendientes de conexión y autorización.
+
+La conversación se guarda por tenant con revisión y un pedido activo. La llamada de IA
+corre fuera de las transacciones para no consumir el pool del CRM durante sus latencias.
+Al terminar se revalidan permisos y perfil; respuestas reemplazadas se descartan. Una
+propuesta válida se conserva editable si una refinación posterior falla.
+
+Organizaciones existentes no repiten onboarding. Las nuevas tienen una primera visita
+guiada que el administrador puede posponer. Se mantiene el SDK ya instalado, con modelo
+configurable y Haiku 5.5 por defecto, verificado en la cuenta. El piloto limita intentos
+y registra tokens; los límites comerciales por plan siguen pendientes de definición.
+
+---
+
 ## 2026-10-12 — Catálogos propios y plantillas aditivas por nicho
 
 Propiedades y vehículos tienen tablas propias, vinculadas a contactos y oportunidades,

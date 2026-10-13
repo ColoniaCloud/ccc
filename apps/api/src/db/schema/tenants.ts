@@ -1,4 +1,4 @@
-import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import type { Plan, Locale, TenantStatus, BusinessProfile } from '@crm/shared'
 
 export const tenants = pgTable('tenants', {
@@ -14,6 +14,7 @@ export const tenants = pgTable('tenants', {
   // organizaciones creadas antes de que existiera el formulario.
   businessProfile: jsonb('business_profile').$type<BusinessProfile>(),
   businessProfileUpdatedAt: timestamp('business_profile_updated_at'),
+  setupRequired: boolean('setup_required').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

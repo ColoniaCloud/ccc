@@ -25,6 +25,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useApp } from './app-context'
+import { SetupWelcome } from '@/components/SetupWelcome'
 
 type Contact = {
   id: string
@@ -165,6 +166,7 @@ export default function AppHomePage() {
 
   return (
     <div className="page dashboard-page">
+      <SetupWelcome />
       <div className="dashboard-hero">
         <div>
           <span className="dashboard-date" suppressHydrationWarning>
