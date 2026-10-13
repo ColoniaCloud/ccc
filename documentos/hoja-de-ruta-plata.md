@@ -107,7 +107,7 @@ usan la clave en memoria del proceso y una base local separada de producción.
 
 ## Cuarta entrega: agenda y seguimiento
 
-Implementada en `codex/agenda-and-google-calendar`, pendiente de publicación:
+Publicada en `main` y en el VPS, merge `57f486c` ([PR #2](https://github.com/ColoniaCloud/ccc/pull/2)):
 
 - Agenda compartida de tareas, visitas y pruebas de manejo. Filtros por responsable,
   tipo y fechas; vencidos, historial y oportunidades sin próximo paso.
@@ -126,9 +126,36 @@ Implementada en `codex/agenda-and-google-calendar`, pendiente de publicación:
   PostgreSQL local: alta/edición de tareas, seguimiento, reprogramación/cancelación,
   lectura de support, aislamiento y vista móvil de 360 px.
 
-El código del conector está probado con respuestas HTTP simuladas. Habilitación
-de Google Cloud, clave de cifrado en el VPS y consentimiento con cuentas reales
-pendientes. Procedimiento y límites del piloto en [agenda-calendar.md](agenda-calendar.md).
+Publicación verificada el 13 de octubre: [CI](https://github.com/ColoniaCloud/ccc/actions/runs/38403341562)
+y [Deploy VPS](https://github.com/ColoniaCloud/ccc/actions/runs/38403604706) exitosos.
+Migración 0013, FORCE RLS/permisos y lectura de las seis organizaciones comprobados.
+Backup previo restaurado: `/root/backups/plata-20261013T131248Z-pre-agenda/`, con
+código, DB y copia privada del entorno. Clave de cifrado generada en el VPS y respaldada;
+Calendar configurado en runtime, callback registrado y verificado en Google Cloud;
+permiso calendar.app.created declarado y guardado en la pantalla de consentimiento.
+El consentimiento de cada cuenta y la primera sincronización real siguen pendientes.
+Procedimiento y límites del piloto en [agenda-calendar.md](agenda-calendar.md).
+
+## Quinta entrega: recorrido de activación del piloto
+
+Implementada en `codex/pilot-activation`, pendiente de publicación:
+
+- El resumen muestra los cinco pasos para poner en marcha inmobiliarias/automotor:
+  configuración, ficha, contacto, oportunidad vinculada y seguimiento con fecha/responsable.
+- El avance se deriva de registros actuales bajo RLS. Visitar una pantalla no completa
+  un paso; una plantilla sola no equivale a una primera operación comercial.
+- El seguimiento puede probarse con una tarea/cita válida o una oportunidad ya cerrada,
+  evitando exigir nuevas acciones a negocios que ya llegaron al resultado.
+- Google Calendar es opcional y personal: estar conectado no prueba una cita sincronizada.
+- El recorrido completo se resume; los vencidos y oportunidades sin próximo paso siguen
+  visibles. Support tiene lectura; la configuración se deriva al propietario/admin.
+- Sin nuevas migraciones, llamadas a IA, invitaciones ni datos de producción ficticios.
+- 145 pruebas, incluidas las condiciones de avance y el aislamiento del calendario.
+
+Este avance representa la situación de los datos conservados. No es una bitácora
+histórica ni una medición de retención; al eliminar los registros de prueba puede
+retroceder. El piloto con negocios reales requiere elegir sus organizaciones y que
+cada participante autorice las conexiones que utilice.
 
 ## Siguientes entregas
 
@@ -153,8 +180,8 @@ usuarios y cuotas de consumo de IA/integraciones; precios y límites quedan por 
 ## Publicación y revisión
 
 Ejecutar `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm type-check`, `pnpm build`.
-Antes de mergear la cuarta entrega a main: backup recuperable de ese momento,
-revisión de 0013 y validación de permisos del rol de aplicación. El workflow de main
+Antes de publicar una entrega: backup recuperable de ese momento, revisión de
+las migraciones que incluya y validación de permisos del rol de aplicación. El workflow de main
 aplica migraciones y despliega automáticamente. El backup de la primera entrega se
 tomó después de publicarla y se verificó restaurándolo en una base descartable;
 no reemplaza los backups previos verificados de las entregas siguientes.
