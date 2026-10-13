@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, uuid, boolean, date } from 'drizzle-orm/pg-core'
 import { tenants } from './tenants'
 import { contacts } from './contacts'
 import { deals } from './deals'
@@ -13,6 +13,7 @@ export const tasks = pgTable('tasks', {
   title: text('title').notNull(),
   description: text('description'),
   dueDate: timestamp('due_date'),
+  dueOn: date('due_on'),
   done: boolean('done').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

@@ -4,6 +4,7 @@ import type { CatalogKind } from '@crm/shared'
 import type { TenantTx } from '../db/tenant-db'
 import { properties, vehicles, tenantModules, contacts, members, appointments, deals } from '../db/schema'
 import { isUuid, validateCatalog } from './validation'
+import { dayOnly } from '../agenda/tasks'
 
 export async function requireCatalog(db: TenantTx, tenantId: string, kind: CatalogKind) {
   if (!await db.query.tenantModules.findFirst({ where: and(eq(tenantModules.tenantId, tenantId), eq(tenantModules.moduleKey, kind)) })) {
@@ -73,6 +74,7 @@ export async function relatedCatalog(db: TenantTx, tenantId: string, kind: Catal
     .orderBy(desc(deals.createdAt))
   const agenda = await db.select({ id: appointments.id, contactId: appointments.contactId, contactName: contacts.name,
     scheduledAt: appointments.scheduledAt, status: appointments.status, assignedTo: appointments.assignedTo,
+    durationMinutes: appointments.durationMinutes,
     notes: appointments.notes })
     .from(appointments).leftJoin(contacts, eq(appointments.contactId, contacts.id))
     .where(and(eq(appointments.tenantId, tenantId), eq(kind === 'properties' ? appointments.propertyId : appointments.vehicleId, id)))
@@ -90,14 +92,53 @@ export async function scheduleAppointment(db: TenantTx, tenantId: string, kind: 
   if (!isUuid(body.contactId)) throw new HTTPException(400, { message: 'Elegí un interesado' })
   if (body.assignedTo != null && body.assignedTo !== '' && !isUuid(body.assignedTo)) throw new HTTPException(400, { message: 'Elegí un responsable válido' })
   const when = typeof body.scheduledAt === 'string' ? new Date(body.scheduledAt) : new Date(NaN)
+  if (typeof body.scheduledAt === 'string') dayOnly(body.scheduledAt.slice(0, 10))
   if (!Number.isFinite(when.getTime()) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(String(body.scheduledAt))) throw new HTTPException(400, { message: 'Ingresá fecha y hora con zona horaria' })
   if (when.getTime() < Date.now() - 60000) throw new HTTPException(400, { message: 'Elegí una fecha futura' })
   if (body.notes != null && (typeof body.notes !== 'string' || body.notes.length > 5000)) throw new HTTPException(400, { message: 'Notas inválidas' })
+  const durationMinutes = appointmentDuration(body.durationMinutes ?? 60)
   await validateReferences(db, tenantId, { sourceContactId: body.contactId, assignedTo: body.assignedTo })
   return (await db.insert(appointments).values({ tenantId, kind: kind === 'properties' ? 'property_visit' : 'test_drive',
     propertyId: kind === 'properties' ? id : null, vehicleId: kind === 'vehicles' ? id : null,
     contactId: body.contactId, assignedTo: body.assignedTo ? String(body.assignedTo) : null,
-    scheduledAt: when, notes: typeof body.notes === 'string' ? body.notes.trim() || null : null }).returning())[0]!
+    scheduledAt: when, durationMinutes, notes: typeof body.notes === 'string' ? body.notes.trim() || null : null }).returning())[0]!
+}
+
+export function appointmentDuration(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 15 || value > 480) throw new HTTPException(400, { message: 'La duración debe ser de 15 a 480 minutos' })
+  return value
+}
+
+export async function editAppointment(db: TenantTx, tenantId: string, kind: CatalogKind, itemId: string, id: string, input: unknown) {
+  await requireCatalog(db, tenantId, kind)
+  await catalogItem(db, tenantId, kind, itemId)
+  if (!isUuid(id) || !input || typeof input !== 'object' || Array.isArray(input)) throw new HTTPException(400, { message: 'Cita inválida' })
+  const [existing] = await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.tenantId, tenantId), eq(kind === 'properties' ? appointments.propertyId : appointments.vehicleId, itemId))).for('update')
+  if (!existing) throw new HTTPException(404, { message: 'Cita no encontrada' })
+  const body = input as Record<string, unknown>, patch: Partial<typeof appointments.$inferInsert> = { updatedAt: new Date() }
+  if (body.status !== undefined) {
+    if (!['scheduled','completed','cancelled'].includes(String(body.status))) throw new HTTPException(400, { message: 'Estado inválido' })
+    patch.status = body.status as 'scheduled' | 'completed' | 'cancelled'
+  }
+  if (body.scheduledAt !== undefined) {
+    if (typeof body.scheduledAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(body.scheduledAt)) throw new HTTPException(400, { message: 'Ingresá fecha y hora con zona horaria' })
+    const when = new Date(body.scheduledAt)
+    dayOnly(body.scheduledAt.slice(0, 10))
+    if (!Number.isFinite(when.getTime()) || when.getTime() < Date.now() - 60000) throw new HTTPException(400, { message: 'Elegí una fecha futura válida' })
+    if ((patch.status ?? existing.status) !== 'scheduled') throw new HTTPException(409, { message: 'Solo se pueden reprogramar citas agendadas' })
+    patch.scheduledAt = when
+  }
+  if (body.durationMinutes !== undefined) patch.durationMinutes = appointmentDuration(body.durationMinutes)
+  if (body.assignedTo !== undefined) {
+    if (body.assignedTo !== null && !isUuid(body.assignedTo)) throw new HTTPException(400, { message: 'Responsable inválido' })
+    await validateReferences(db, tenantId, { assignedTo: body.assignedTo })
+    patch.assignedTo = body.assignedTo as string | null
+  }
+  if (body.notes !== undefined) {
+    if (body.notes !== null && (typeof body.notes !== 'string' || body.notes.length > 5000)) throw new HTTPException(400, { message: 'Notas inválidas' })
+    patch.notes = typeof body.notes === 'string' ? body.notes.trim() || null : null
+  }
+  return (await db.update(appointments).set(patch).where(and(eq(appointments.id, id), eq(appointments.tenantId, tenantId))).returning())[0]!
 }
 
 export async function changeAppointment(db: TenantTx, tenantId: string, kind: CatalogKind, itemId: string, id: string, status: unknown) {

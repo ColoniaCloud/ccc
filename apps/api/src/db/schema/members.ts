@@ -12,6 +12,7 @@ export const members = pgTable('members', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
   userTenantUnique: unique().on(table.userId, table.tenantId),
+  tenantMemberUnique: unique('members_tenant_member_unique').on(table.tenantId, table.id),
   ownerUnique: uniqueIndex('members_one_owner_per_tenant').on(table.tenantId).where(sql`${table.role} = 'owner'`),
   validRole: check('members_valid_role', sql`${table.role} in ('owner', 'admin', 'manager', 'seller', 'support')`),
 }))

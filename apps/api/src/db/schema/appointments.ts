@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { pgTable, uuid, text, timestamp, foreignKey, check } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, timestamp, foreignKey, check, integer } from 'drizzle-orm/pg-core'
 import type { AppointmentKind, AppointmentStatus } from '@crm/shared'
 import { tenants } from './tenants'
 import { contacts } from './contacts'
@@ -15,6 +15,7 @@ export const appointments = pgTable('appointments', {
   contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
   assignedTo: uuid('assigned_to').references(() => members.id, { onDelete: 'set null' }),
   scheduledAt: timestamp('scheduled_at').notNull(),
+  durationMinutes: integer('duration_minutes').notNull().default(60),
   status: text('status').notNull().default('scheduled').$type<AppointmentStatus>(),
   notes: text('notes'),
   createdAt: timestamp('created_at').notNull().defaultNow(),

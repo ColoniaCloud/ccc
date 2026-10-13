@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 
-type Appointment = { id: string; contactId: string | null; contactName: string | null; scheduledAt: string; status: string; assignedTo: string | null; notes: string | null }
+type Appointment = { id: string; contactId: string | null; contactName: string | null; scheduledAt: string; durationMinutes: number; status: string; assignedTo: string | null; notes: string | null }
 type Detail = { item: CatalogRecord; sourceContactName: string | null; deals: { id: string; title: string; contactName: string | null; pipelineId: string }[]; appointments: Appointment[] }
 const APPOINTMENT_STATUS: Record<string, string> = { scheduled: 'Agendada', completed: 'Realizada', cancelled: 'Cancelada' }
 
@@ -31,6 +31,7 @@ export function CatalogDetail({ kind }: { kind: CatalogKind }) {
   const [busy, setBusy] = useState(false), [formError, setFormError] = useState<string | null>(null)
   const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]), [members, setMembers] = useState<{ id: string; name: string }[]>([])
   const [contactId, setContactId] = useState(''), [assignedTo, setAssignedTo] = useState('none'), [when, setWhen] = useState(''), [notes, setNotes] = useState('')
+  const [duration, setDuration] = useState(60)
   const config = CATALOGS[kind], canWrite = me.member.role !== 'support'
   async function load() {
     const res = await apiFetch(`/api/${kind}/${id}`), data = await res.json()
@@ -78,7 +79,7 @@ export function CatalogDetail({ kind }: { kind: CatalogKind }) {
     event.preventDefault(); setBusy(true); setFormError(null)
     try {
       const res = await apiFetch(`/api/${kind}/${id}/appointments`, { method: 'POST', body: JSON.stringify({ contactId,
-        assignedTo: assignedTo === 'none' ? null : assignedTo, scheduledAt: new Date(when).toISOString(), notes }) }), data = await res.json()
+        assignedTo: assignedTo === 'none' ? null : assignedTo, scheduledAt: new Date(when).toISOString(), durationMinutes: duration, notes }) }), data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'No se pudo agendar')
       setScheduling(false); setWhen(''); setNotes(''); setContactId(''); await load()
     } catch (err) { setFormError((err as Error).message) } finally { setBusy(false) }
@@ -116,12 +117,13 @@ export function CatalogDetail({ kind }: { kind: CatalogKind }) {
             {!detail.appointments.length && <p className="text-sm text-muted-foreground">No hay citas agendadas.</p>}
             {detail.appointments.map((appointment) => <div key={appointment.id} className="flex flex-col gap-2 rounded-md border p-3">
               <div className="flex flex-wrap items-center justify-between gap-2"><strong>{appointment.contactName ?? 'Contacto eliminado'}</strong><Badge variant="outline">{APPOINTMENT_STATUS[appointment.status]}</Badge></div>
-              <p className="text-sm">{new Date(appointment.scheduledAt).toLocaleString('es-UY', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+              <p className="text-sm">{new Date(appointment.scheduledAt).toLocaleString('es-UY', { dateStyle: 'medium', timeStyle: 'short' })} · {appointment.durationMinutes} min</p>
               <p className="text-sm text-muted-foreground">{members.find((member) => member.id === appointment.assignedTo)?.name ?? 'Sin responsable'}</p>
               {appointment.notes && <p className="whitespace-pre-wrap break-words text-sm">{appointment.notes}</p>}
               {canWrite && appointment.status === 'scheduled' && <div className="flex gap-2"><Button size="sm" disabled={busy} onClick={() => void changeStatus(appointment, 'completed')}>Marcar realizada</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => void changeStatus(appointment, 'cancelled')}>Cancelar cita</Button></div>}
             </div>)}
             {canWrite && available && <Button onClick={() => { setAssignedTo(detail.item.assignedTo ?? 'none'); setFormError(null); setScheduling(true) }}>Agendar {config.appointment}</Button>}
+            <Button asChild variant="outline"><Link href="/app/agenda">Ver agenda del equipo</Link></Button>
           </CardContent></Card>
         </div>
       </div>
@@ -131,6 +133,7 @@ export function CatalogDetail({ kind }: { kind: CatalogKind }) {
           {selection('appointment-contact', 'Interesado', contactId, setContactId, contacts)}
           {selection('appointment-member', 'Responsable', assignedTo, setAssignedTo, members, true)}
           <Field><FieldLabel htmlFor="appointment-when">Fecha y hora</FieldLabel><Input id="appointment-when" type="datetime-local" required value={when} onChange={(event) => setWhen(event.target.value)} disabled={busy} /></Field>
+          <Field><FieldLabel htmlFor="appointment-duration">Duración en minutos</FieldLabel><Input id="appointment-duration" type="number" required min={15} max={480} value={duration} onChange={(event) => setDuration(Number(event.target.value))} disabled={busy} /></Field>
           <Field><FieldLabel htmlFor="appointment-notes">Notas</FieldLabel><Textarea id="appointment-notes" maxLength={5000} value={notes} onChange={(event) => setNotes(event.target.value)} disabled={busy} /></Field>
         </FieldGroup>{formError && <Alert variant="destructive"><AlertDescription>{formError}</AlertDescription></Alert>}<Button disabled={busy || !contactId || !when}>{busy ? 'Agendando…' : 'Confirmar cita'}</Button>
         </form></SheetContent></Sheet>

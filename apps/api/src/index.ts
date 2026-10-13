@@ -25,6 +25,9 @@ import { organizationsRoutes } from './routes/organizations'
 import { createCatalogRoutes } from './routes/catalogs'
 import { presetsRoutes } from './routes/presets'
 import { setupRoutes } from './routes/setup'
+import { agendaRoutes } from './routes/agenda'
+import { calendarRoutes } from './routes/calendar'
+import { startCalendarWorker } from './calendar/worker'
 
 const app = new Hono()
 
@@ -68,6 +71,8 @@ app.route('/api/contacts', contactsRoutes)
 app.route('/api/pipelines', pipelinesRoutes)
 app.route('/api/deals', dealsRoutes)
 app.route('/api/tasks', tasksRoutes)
+app.route('/api/agenda', agendaRoutes)
+app.route('/api/calendar', calendarRoutes)
 app.route('/api/billing', billingRoutes)
 app.route('/api/modules', modulesRoutes)
 app.route('/api/tags', tagsRoutes)
@@ -89,5 +94,6 @@ const port = Number(process.env.PORT) || 3001
 console.log(`API corriendo en http://localhost:${port}`)
 
 serve({ fetch: app.fetch, port })
+startCalendarWorker()
 
 export default app
