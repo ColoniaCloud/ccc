@@ -163,7 +163,7 @@ Backup previo restaurado: `/root/backups/plata-20261013T142412Z-pre-activation/`
 
 ## Sexta entrega: medición del piloto
 
-Implementada en `codex/pilot-measurement`, pendiente de publicación:
+Publicada en PR #4, merge `ea1f8f0`, con despliegue y migración 0014 verificados:
 
 - Inicio explícito por propietario/admin o al intentar la primera escritura comercial.
   Consultar pantallas no inicia la medición. Una solicitud rechazada no suma actividad.
@@ -185,7 +185,7 @@ Implementada en `codex/pilot-measurement`, pendiente de publicación:
 
 ## Septima entrega: fotos privadas del catalogo
 
-Implementada en `codex/catalog-photos`, sobre la medicion del piloto y pendiente de publicacion:
+Publicada en PR #5, merge `08e10e9`, con despliegue, migración 0015 y procesamiento de imágenes verificados:
 
 - Galeria en el detalle de propiedades y vehiculos: carga multiple, ampliacion,
   portada, orden y eliminacion confirmada. Support solo tiene lectura.
@@ -196,6 +196,21 @@ Implementada en `codex/catalog-photos`, sobre la medicion del piloto y pendiente
 - Acceso autenticado, respuestas privadas y sin enlaces publicos compartibles.
 - Pruebas de seguridad, orientacion, orden, limites, rollback, ambos catalogos y
   pantalla movil de 360 px. Detalles operativos en [catalogo-fotos.md](catalogo-fotos.md).
+
+## Octava entrega: Tu día
+
+Implementada en `codex/daily-focus`, pendiente de publicación:
+
+- Foco personal por defecto, con filtros de todo el equipo, otro responsable y sin asignar.
+- Tareas vencidas, de hoy y sin fecha; citas en curso o próximas hasta seis días después
+  de hoy; citas terminadas sin resolver; oportunidades sin próximo paso.
+- Lee la Agenda existente y mantiene sus permisos. Actualiza cada minuto mientras
+  la página está visible, al volver a ella y mediante un botón explícito.
+- Enlaces conservan organización, responsable y sección; permiten editar la tarea,
+  reprogramar la cita o crear seguimiento para la oportunidad. Support solo lee.
+- Una cita en curso mantiene el seguimiento y no vence hasta terminar su duración,
+  con la misma regla en Agenda, activación y Tu día.
+- Sin migraciones, emails, permisos OAuth adicionales ni llamadas a IA.
 
 ## Siguientes entregas
 

@@ -272,6 +272,17 @@ describe('agenda y seguimiento comercial', () => {
     const other = await scoped(B, (tx) => agenda(tx, B, now))
     expect(other.tasks).toEqual([]); expect(other.appointments).toEqual([])
   })
+  it('una visita en curso conserva seguimiento y solo vence al terminar su duración', async () => {
+    const result = await apply(), item = await scoped(A, tx => saveCatalog(tx, A, 'properties', property))
+    const [stage] = await database.select().from(schema.pipelineStages)
+    await database.insert(schema.deals).values({ tenantId: A, pipelineId: result.pipelineId!, stageId: stage!.id, title: 'En visita', contactId: CONTACT, propertyId: item.id })
+    await database.insert(schema.appointments).values({ tenantId: A, kind: 'property_visit', propertyId: item.id, contactId: CONTACT, assignedTo: OWNER, scheduledAt: new Date('2026-10-13T14:30:00Z'), durationMinutes: 60 })
+    const running = await scoped(A, tx => agenda(tx, A, new Date('2026-10-13T15:00:00Z')))
+    expect(running.counts).toMatchObject({ overdueAppointments: 0, withoutFollowUp: 0 })
+    expect(running.followUp[0]?.nextAppointment).not.toBeNull()
+    const ended = await scoped(A, tx => agenda(tx, A, new Date('2026-10-13T15:30:00Z')))
+    expect(ended.counts).toMatchObject({ overdueAppointments: 1, withoutFollowUp: 1 })
+  })
   it('reprograma fecha, duración y responsable sin cambiar interesado; valida organización', async () => {
     await apply(); const item = await scoped(A, (tx) => saveCatalog(tx, A, 'properties', property))
     const appointment = await scoped(A, (tx) => scheduleAppointment(tx, A, 'properties', item.id, { contactId: CONTACT, scheduledAt: future() }))

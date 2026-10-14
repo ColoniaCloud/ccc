@@ -1,4 +1,5 @@
 import { and, eq, isNotNull, sql } from 'drizzle-orm'
+import { appointmentIsPast } from '@crm/shared'
 import type { TenantTx } from '../db/tenant-db'
 import { tenants, tenantModules, pipelines, contacts, properties, vehicles, deals, pipelineStages, calendarConnections, calendarEventSync } from '../db/schema'
 import { agenda } from '../agenda/service'
@@ -17,7 +18,7 @@ export async function activation(tx: TenantTx, tenantId: string, memberId: strin
     .where(and(eq(deals.tenantId, tenantId), isNotNull(kind === 'properties' ? deals.propertyId : deals.vehicleId)))
   const activity = await agenda(tx, tenantId, now), eligible = new Set(relatedDeals.map((deal) => deal.id))
   const plannedTask = activity.tasks.some((task) => task.dealId && eligible.has(task.dealId) && task.assignedTo && task.dueOn && (task.done || task.dueOn >= activity.today))
-  const plannedAppointment = activity.appointments.some((item) => item.assignedTo && (item.status === 'completed' || (item.status === 'scheduled' && item.scheduledAt >= now)) && relatedDeals.some((deal) => item.contactId === deal.contactId && (kind === 'properties' ? item.propertyId === deal.propertyId : item.vehicleId === deal.vehicleId)))
+  const plannedAppointment = activity.appointments.some((item) => item.assignedTo && (item.status === 'completed' || (item.status === 'scheduled' && !appointmentIsPast(item, now))) && relatedDeals.some((deal) => item.contactId === deal.contactId && (kind === 'properties' ? item.propertyId === deal.propertyId : item.vehicleId === deal.vehicleId)))
   const followed = plannedTask || plannedAppointment || relatedDeals.some((deal) => deal.outcome !== 'open')
   const connection = await tx.query.calendarConnections.findFirst({ where: and(eq(calendarConnections.tenantId, tenantId), eq(calendarConnections.memberId, memberId)) })
   const [synced] = connection ? await tx.select({ total: sql<number>`count(*)::int` }).from(calendarEventSync)

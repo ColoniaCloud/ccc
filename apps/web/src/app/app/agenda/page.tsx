@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { appointmentIsPast } from '@crm/shared'
 import { useApp } from '../app-context'
 import { TaskForm, type AgendaTask } from '@/components/TaskForm'
 import { CalendarConnection } from '@/components/CalendarConnection'
@@ -44,6 +45,16 @@ export default function AgendaPage() {
       setData(agenda); setMembers(team.items); setFrom(agenda.today)
       const end = new Date(`${agenda.today}T12:00:00Z`); end.setUTCDate(end.getUTCDate() + 7); setTo(end.toISOString().slice(0, 10))
       const params = new URLSearchParams(window.location.search)
+      const selectedTab = params.get('tab'), selectedMember = params.get('responsible'), selectedKind = params.get('kind')
+      if (selectedTab && ['pending','overdue','followUp','history'].includes(selectedTab)) setTab(selectedTab)
+      if (selectedMember && (['all','none'].includes(selectedMember) || team.items.some((member: { id: string }) => member.id === selectedMember))) setResponsible(selectedMember)
+      if (selectedKind && ['all','task','property_visit','test_drive'].includes(selectedKind)) setKind(selectedKind)
+      for (const [key, change] of [['from',setFrom],['to',setTo]] as const) { const value = params.get(key); if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) change(value) }
+      const selectedTask = agenda.tasks.find(task => task.id === params.get('taskId'))
+      if (selectedTask && canWrite) setTaskForm({ task: selectedTask })
+      const selectedAppointment = agenda.appointments.find(item => item.id === params.get('appointmentId'))
+      if (selectedAppointment && canWrite && selectedAppointment.status === 'scheduled') openAppointment(selectedAppointment)
+
       if (canWrite && params.get('newTask') === '1') setTaskForm({ dealId: params.get('dealId') ?? undefined })
     }).catch((err: Error) => { if (!controller.signal.aborted) setError(err.message) })
     return () => controller.abort()
@@ -61,7 +72,7 @@ export default function AgendaPage() {
   function inRange(day: string | null) { return !day || ((!from || day >= from) && (!to || day <= to)) }
   const now = Date.now()
   const tasks = (data?.tasks ?? []).filter((item) => memberMatches(item.assignedTo) && (kind === 'all' || kind === 'task') && (tab === 'history' ? item.done : !item.done && (tab === 'overdue' ? Boolean(item.dueOn && item.dueOn < data!.today) : inRange(item.dueOn))))
-  const appointments = (data?.appointments ?? []).filter((item) => memberMatches(item.assignedTo) && (kind === 'all' || kind === item.kind) && (tab === 'history' ? item.status !== 'scheduled' : item.status === 'scheduled' && (tab === 'overdue' ? new Date(item.scheduledAt).getTime() < now : inRange(dayAt(item.scheduledAt)))))
+  const appointments = (data?.appointments ?? []).filter((item) => memberMatches(item.assignedTo) && (kind === 'all' || kind === item.kind) && (tab === 'history' ? item.status !== 'scheduled' : item.status === 'scheduled' && (tab === 'overdue' ? appointmentIsPast(item, new Date(now)) : inRange(dayAt(item.scheduledAt)))))
   const rows = [...tasks.map((item) => ({ type: 'task' as const, item, day: item.dueOn ?? '9999' })), ...appointments.map((item) => ({ type: 'appointment' as const, item, day: dayAt(item.scheduledAt) }))].sort((a, b) => a.day.localeCompare(b.day) || (a.type === 'appointment' && b.type === 'appointment' ? a.item.scheduledAt.localeCompare(b.item.scheduledAt) : a.type.localeCompare(b.type)))
   function openAppointment(item: Appointment) {
     const date = new Date(item.scheduledAt), offset = date.getTimezoneOffset() * 60000
@@ -97,7 +108,7 @@ export default function AgendaPage() {
         </> : rows.length ? rows.map((row) => <div key={`${row.type}-${row.item.id}`} className="flex flex-col gap-2 rounded-lg border p-4">
           <div className="flex flex-wrap items-start justify-between gap-2"><div className="min-w-0"><p className="font-medium break-words">{row.type === 'task' ? row.item.title : row.item.propertyTitle ?? row.item.vehicleTitle ?? 'Ficha eliminada'}</p><p className="text-sm text-muted-foreground">{row.type === 'task' ? row.item.dueOn ? dateLabel(row.item.dueOn) : 'Sin fecha · pendiente de planificar' : `${timeLabel(row.item.scheduledAt)} · ${row.item.durationMinutes} min`}</p></div><Badge variant="outline">{row.type === 'task' ? row.item.done ? 'Tarea completada' : 'Tarea' : row.item.status === 'completed' ? 'Realizada' : row.item.status === 'cancelled' ? 'Cancelada' : row.item.kind === 'property_visit' ? 'Visita' : 'Prueba de manejo'}</Badge></div>
           <p className="text-sm text-muted-foreground">{row.item.responsibleName ?? 'Sin responsable'}{row.item.contactName ? ` · ${row.item.contactName}` : ''}</p>
-          {((row.type === 'task' && !row.item.done && row.item.dueOn && row.item.dueOn < data.today) || (row.type === 'appointment' && row.item.status === 'scheduled' && new Date(row.item.scheduledAt).getTime() < now)) && <p className="text-sm text-destructive">{row.type === 'task' ? 'Vencida' : 'Horario pasado · marcar realizada o reprogramar'}</p>}
+          {((row.type === 'task' && !row.item.done && row.item.dueOn && row.item.dueOn < data.today) || (row.type === 'appointment' && row.item.status === 'scheduled' && appointmentIsPast(row.item, new Date(now)))) && <p className="text-sm text-destructive">{row.type === 'task' ? 'Vencida' : 'Horario pasado · marcar realizada o reprogramar'}</p>}
           <div className="flex flex-wrap gap-2">{row.type === 'task' ? <>{row.item.contactId && <Button asChild size="sm" variant="ghost"><Link href={`/app/contacts/${row.item.contactId}`}>Ver contacto</Link></Button>}{canWrite && <><Button size="sm" disabled={busy} variant="outline" onClick={() => void mutate(`/api/tasks/${row.item.id}`, 'PATCH', { done: !row.item.done })}>{row.item.done ? 'Reabrir' : 'Completar tarea'}</Button><Button size="sm" disabled={busy} variant="outline" onClick={() => setTaskForm({ task: row.item })}>Editar</Button><Button size="sm" disabled={busy} variant="ghost" onClick={() => setDeleting(row.item)}>Eliminar</Button></>}</> : <><Button asChild size="sm" variant="ghost"><Link href={assetUrl(row.item)}>Ver ficha</Link></Button>{canWrite && row.item.status === 'scheduled' && <><Button size="sm" disabled={busy} variant="outline" onClick={() => openAppointment(row.item)}>Reprogramar</Button><Button size="sm" disabled={busy} variant="outline" onClick={() => void mutate(`/api/${row.item.propertyId ? 'properties' : 'vehicles'}/${row.item.propertyId ?? row.item.vehicleId}/appointments/${row.item.id}`, 'PATCH', { status: 'completed' })}>Marcar realizada</Button><Button size="sm" disabled={busy} variant="ghost" onClick={() => void mutate(`/api/${row.item.propertyId ? 'properties' : 'vehicles'}/${row.item.propertyId ?? row.item.vehicleId}/appointments/${row.item.id}`, 'PATCH', { status: 'cancelled' })}>Cancelar cita</Button></>}</>}</div>
         </div>) : <Empty><EmptyHeader><EmptyTitle>Sin actividades en esta vista</EmptyTitle><EmptyDescription>Cambiá los filtros o planificá el próximo seguimiento.</EmptyDescription></EmptyHeader></Empty>}
       </TabsContent></Tabs></CardContent></Card><CalendarConnection />
