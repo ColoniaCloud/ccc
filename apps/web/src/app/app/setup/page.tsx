@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import type { PresetKey, PresetPreview, SetupProposal, SetupSnapshot } from '@crm/shared'
+import type { PresetKey, PresetPreview, SetupProposal, SetupSnapshot, SetupField } from '@crm/shared'
 import { useApp } from '../app-context'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,9 +13,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SetupPersonalization } from '@/components/SetupPersonalization'
 
-type Preset = { key: PresetKey; label: string; module: string; stages: string[] }
-type Approval = { fingerprint: string; previews: PresetPreview[]; conflicts: string[] }
+type Preset = { key: PresetKey; label: string; module: string; stages: string[]; pipelineName: string }
+type Approval = { fingerprint: string; previews: PresetPreview[]; conflicts: string[]; fields?: { create: SetupField[]; reuse: string[] } }
 
 export default function SetupPage() {
   const { apiFetch, me } = useApp()
@@ -65,6 +66,10 @@ export default function SetupPage() {
     setBusy(true); setError(null)
     try { receive(await request('/resume','POST')) } catch (err) { setError((err as Error).message) } finally { setBusy(false) }
   }
+  async function refine() {
+    setBusy(true); setError(null); setApproval(null)
+    try { receive(await request('/refine','POST',{ revision: view?.session?.revision })) } catch (err) { setError((err as Error).message) } finally { setBusy(false) }
+  }
   async function review(event: React.FormEvent) {
     event.preventDefault(); if (!draft || !view?.session) return
     setBusy(true); setError(null); setApproval(null)
@@ -94,6 +99,9 @@ export default function SetupPage() {
         <p className="whitespace-pre-wrap break-words">{view.session?.proposal?.summary}</p><div className="flex flex-wrap gap-2">{view.session?.proposal?.presets.map((key) => <Badge key={key} variant="secondary">{presets.find((preset) => preset.key === key)?.label}</Badge>)}</div>
         {Boolean(view.session?.proposal?.recommendations.length) && <div><h2 className="font-medium">Próximas acciones</h2><ul className="mt-2 list-disc pl-5">{view.session?.proposal?.recommendations.map((text, index) => <li className="break-words" key={index}>{text}</li>)}</ul></div>}
         {Boolean(view.session?.proposal?.connections.length) && <div><h2 className="font-medium">Herramientas sugeridas</h2><p className="text-sm text-muted-foreground">Este es el plan guardado. Revisá la conexión de tu Google Calendar desde Agenda; cada persona debe autorizarla.</p><ul className="mt-2 flex flex-col gap-3">{view.session?.proposal?.connections.map((connection, index) => <li key={index}><strong>{connection.tool}</strong><Badge className="ml-2" variant="outline">Por revisar</Badge><p className="text-sm text-muted-foreground">{connection.purpose}</p></li>)}</ul></div>}
+        {Boolean(view.session?.proposal?.processes?.length) && <div><h2 className="font-medium">Procesos personalizados aprobados</h2>{view.session?.proposal?.processes?.map(process => <p key={process.presetKey} className="text-sm">{process.name}: {[...process.openStages,process.wonLabel,process.lostLabel].join(' → ')}</p>)}</div>}
+        {Boolean(view.session?.proposal?.fields?.length) && <p className="text-sm">Campos opcionales aprobados: {view.session?.proposal?.fields?.map(field => field.label).join(', ')}.</p>}
+        {canConfigure && <Button className="self-start" variant="outline" disabled={locked} onClick={() => void refine()}>Ajustar mi CRM</Button>}
         <div className="flex flex-wrap gap-2"><Button asChild><Link href={`/app/${view.profile?.industry === 'real_estate' ? 'properties' : 'vehicles'}`}>Abrir catálogo</Link></Button><Button variant="outline" asChild><Link href="/app/pipeline">Ver procesos comerciales</Link></Button><Button variant="outline" asChild><Link href="/app/agenda">Abrir agenda y conexiones</Link></Button></div>
       </CardContent></Card> : !deferred && <div className="grid items-start gap-4 xl:grid-cols-2">
         <Card><CardHeader><CardTitle role="heading" aria-level={2}>Conversemos sobre tu negocio</CardTitle><CardDescription>Ya tengo los datos del registro. Las respuestas se guardan para retomar después.</CardDescription></CardHeader><CardContent className="flex flex-col gap-4">
@@ -109,14 +117,16 @@ export default function SetupPage() {
         {draft ? <Card><CardHeader><CardTitle role="heading" aria-level={2}>Tu propuesta</CardTitle><CardDescription>Podés editarla antes de revisar los cambios y aprobar.</CardDescription></CardHeader><CardContent>
           <form onSubmit={review} className="flex flex-col gap-4"><FieldGroup>
             <Field><FieldLabel htmlFor="setup-summary">Resumen del negocio y configuración</FieldLabel><Textarea id="setup-summary" required maxLength={1200} value={draft.summary} disabled={locked || !canConfigure} onChange={(event) => changeDraft({ ...draft, summary: event.target.value })} /></Field>
-            <FieldSet><FieldLegend>Procesos que querés preparar</FieldLegend><FieldGroup>{choices.map((preset) => <Field key={preset.key} orientation="horizontal"><Checkbox id={`setup-${preset.key}`} checked={draft.presets.includes(preset.key)} disabled={locked || !canConfigure} onCheckedChange={(checked) => changeDraft({ ...draft, presets: checked ? [...draft.presets, preset.key] : draft.presets.filter((key) => key !== preset.key) })} /><FieldLabel htmlFor={`setup-${preset.key}`}>{preset.label}</FieldLabel></Field>)}</FieldGroup></FieldSet>
+            <FieldSet><FieldLegend>Procesos que querés preparar</FieldLegend><FieldGroup>{choices.map((preset) => <Field key={preset.key} orientation="horizontal"><Checkbox id={`setup-${preset.key}`} checked={draft.presets.includes(preset.key)} disabled={locked || !canConfigure} onCheckedChange={(checked) => changeDraft({ ...draft, presets: checked ? [...draft.presets, preset.key] : draft.presets.filter((key) => key !== preset.key), processes: checked ? draft.processes : draft.processes?.filter((item) => item.presetKey !== preset.key) })} /><FieldLabel htmlFor={`setup-${preset.key}`}>{preset.label}</FieldLabel></Field>)}</FieldGroup></FieldSet>
+            <SetupPersonalization draft={draft} presets={presets} disabled={locked || !canConfigure} onChange={changeDraft} />
             <Field><FieldLabel htmlFor="setup-recommendations">Próximas acciones</FieldLabel><Textarea id="setup-recommendations" value={recommendations} disabled={locked || !canConfigure} maxLength={1200} onChange={(event) => { setRecommendations(event.target.value); setApproval(null) }} /><FieldDescription>Hasta cinco acciones, una por línea. Se guardan como plan de trabajo.</FieldDescription></Field>
             <FieldSet><FieldLegend>Herramientas por conectar</FieldLegend><FieldDescription>Se guardarán como pendientes. Este paso no conecta ni publica nada.</FieldDescription><FieldGroup>
               {draft.connections.map((connection, index) => <FieldSet key={index}><FieldGroup><Field><FieldLabel htmlFor={`tool-${index}`}>Herramienta {index + 1}</FieldLabel><Input id={`tool-${index}`} required maxLength={80} value={connection.tool} disabled={locked || !canConfigure} onChange={(event) => changeDraft({ ...draft, connections: draft.connections.map((item, position) => position === index ? { ...item, tool: event.target.value } : item) })} /></Field><Field><FieldLabel htmlFor={`purpose-${index}`}>Para qué la usás</FieldLabel><Textarea id={`purpose-${index}`} required maxLength={240} value={connection.purpose} disabled={locked || !canConfigure} onChange={(event) => changeDraft({ ...draft, connections: draft.connections.map((item, position) => position === index ? { ...item, purpose: event.target.value } : item) })} /></Field></FieldGroup><Button type="button" size="sm" variant="outline" disabled={locked || !canConfigure} onClick={() => changeDraft({ ...draft, connections: draft.connections.filter((_, position) => position !== index) })}>Quitar herramienta {index + 1}</Button></FieldSet>)}
             </FieldGroup><Button type="button" variant="outline" disabled={locked || !canConfigure || draft.connections.length >= 8} onClick={() => changeDraft({ ...draft, connections: [...draft.connections, { tool: '', purpose: '' }] })}>Agregar herramienta pendiente</Button></FieldSet>
           </FieldGroup><Button disabled={locked || !canConfigure || !draft.presets.length}>Guardar y revisar cambios</Button></form>
           {approval && <div className="mt-5 flex flex-col gap-4">
-            <h2 className="font-medium">Cambios para aprobar</h2>{approval.previews.map((preview) => <div key={preview.key} className="rounded-md border p-3"><h3 className="font-medium">{preview.label}</h3>{preview.alreadyApplied ? <p className="text-sm text-muted-foreground">Ya aplicada. Se conservan tus personalizaciones actuales.</p> : <><p className="text-sm">Se habilita {preview.module === 'properties' ? 'Propiedades' : 'Vehículos'} y se agrega el proceso {preview.pipelineName}.</p><ol className="mt-2 flex flex-wrap gap-2">{preview.stages.map((stage, index) => <li key={stage}><Badge variant="secondary">{index + 1}. {stage}</Badge></li>)}</ol><p className="mt-2 text-sm">Campos opcionales: {preview.fieldsToCreate.join(', ') || 'Se reutilizan los campos existentes'}.</p></>}</div>)}
+            <h2 className="font-medium">Cambios para aprobar</h2>{approval.previews.map((preview) => <div key={preview.key} className="rounded-md border p-3"><h3 className="font-medium">{preview.label}</h3>{preview.alreadyApplied && !draft?.processes?.some(p => p.presetKey === preview.key) ? <p className="text-sm text-muted-foreground">Ya aplicada. Se conservan tus personalizaciones actuales.</p> : <><p className="text-sm">{preview.additionalProcess ? 'Se conserva el proceso anterior. ' : ''}Se habilita {preview.module === 'properties' ? 'Propiedades' : 'Vehículos'} y se agrega el proceso {preview.pipelineName}.</p><ol className="mt-2 flex flex-wrap gap-2">{preview.stages.map((stage, index) => <li key={stage}><Badge variant="secondary">{index + 1}. {stage}</Badge></li>)}</ol><p className="mt-2 text-sm">Campos opcionales: {preview.fieldsToCreate.join(', ') || 'Se reutilizan los campos existentes'}.</p></>}</div>)}
+            {approval.fields && <div className="rounded-md border p-3"><h3 className="font-medium">Campos de contacto personalizados</h3>{approval.fields.create.length ? <ul className="mt-2 flex flex-col gap-2">{approval.fields.create.map(field => <li key={field.key}><strong>{field.label}</strong><p className="text-sm text-muted-foreground">{({text:'Texto',number:'Número',date:'Fecha',boolean:'Sí / no',select:'Lista de opciones'})[field.fieldType]} · opcional{field.options ? ` · Opciones: ${field.options.join(', ')}` : ''}</p></li>)}</ul> : <p className="text-sm">No se agregan nuevos campos.</p>}{Boolean(approval.fields.reuse.length) && <p className="text-sm">Se reutilizan: {approval.fields.reuse.join(', ')}.</p>}</div>}
             {approval.conflicts.length > 0 && <Alert variant="destructive"><AlertDescription>{approval.conflicts.join(' ')}</AlertDescription></Alert>}
             <p className="text-sm text-muted-foreground">Se conservan tus datos y procesos existentes. Las herramientas del plan quedan pendientes de conexión.</p><Button disabled={locked || approval.conflicts.length > 0 || !canConfigure} onClick={() => void apply()}>Aprobar y preparar mi CRM</Button>
           </div>}

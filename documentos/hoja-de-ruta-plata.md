@@ -199,7 +199,7 @@ Publicada en PR #5, merge `08e10e9`, con despliegue, migración 0015 y procesami
 
 ## Octava entrega: Tu día
 
-Implementada en `codex/daily-focus`, pendiente de publicación:
+Publicada en PR #6, merge `2dbf30d` y corrección Node 20 `62c79be`, con CI y despliegue verificados:
 
 - Foco personal por defecto, con filtros de todo el equipo, otro responsable y sin asignar.
 - Tareas vencidas, de hoy y sin fecha; citas en curso o próximas hasta seis días después
@@ -211,6 +211,26 @@ Implementada en `codex/daily-focus`, pendiente de publicación:
 - Una cita en curso mantiene el seguimiento y no vence hasta terminar su duración,
   con la misma regla en Agenda, activación y Tu día.
 - Sin migraciones, emails, permisos OAuth adicionales ni llamadas a IA.
+
+## Novena entrega: onboarding personalizado
+
+Implementada en `codex/onboarding-personalization`, pendiente de publicación:
+
+- Anthropic puede proponer un proceso adaptado por plantilla elegida, con nombre,
+  una a ocho etapas abiertas y dos cierres que mantienen resultados ganado/perdido.
+- Hasta ocho campos opcionales de contacto: texto, número, fecha, sí/no o lista.
+  No se habilitan campos dinámicos de propiedades, vehículos u oportunidades.
+- El usuario edita la propuesta y revisa los procesos, tipos, opciones y conflictos
+  antes de aprobar. Cambios de configuración invalidan la aprobación anterior.
+- Si la plantilla ya fue aplicada, se agrega otro proceso: se conservan IDs, etapas,
+  contactos, oportunidades y personalizaciones existentes. Los campos compatibles
+  se reutilizan; los conflictos requieren corregir la propuesta.
+- Ajustar mi CRM retoma el asistente para propietario/admin, conservando mensajes,
+  uso acumulado y el límite técnico de veinte consultas, sin resetearlo al reabrir.
+- La IA recibe solamente metadatos acotados de configuración, no valores ni registros
+  de contactos. Las llamadas siguen fuera de las transacciones PostgreSQL.
+- Se usan los JSON existentes, sin nuevas migraciones ni dependencias. Una aprobación
+  conjunta se aplica atómicamente y cuenta una acción de actividad del piloto.
 
 ## Siguientes entregas
 
