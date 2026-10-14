@@ -29,6 +29,7 @@ import { agendaRoutes } from './routes/agenda'
 import { calendarRoutes } from './routes/calendar'
 import { startCalendarWorker } from './calendar/worker'
 import { activationRoutes } from './routes/activation'
+import { pilotRoutes } from './routes/pilot'
 
 const app = new Hono()
 
@@ -75,6 +76,7 @@ app.route('/api/tasks', tasksRoutes)
 app.route('/api/agenda', agendaRoutes)
 app.route('/api/calendar', calendarRoutes)
 app.route('/api/activation', activationRoutes)
+app.route('/api/pilot', pilotRoutes)
 app.route('/api/billing', billingRoutes)
 app.route('/api/modules', modulesRoutes)
 app.route('/api/tags', tagsRoutes)

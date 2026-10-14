@@ -4,11 +4,12 @@ import type { CatalogKind } from '@crm/shared'
 import type { HonoVariables } from '../types'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
+import { pilotObservation } from '../middleware/pilot'
 import { listCatalog, saveCatalog, relatedCatalog, scheduleAppointment, editAppointment } from '../catalogs/service'
 
 export function createCatalogRoutes(kind: CatalogKind) {
   const routes = new Hono<{ Variables: HonoVariables }>()
-  routes.use('*', authMiddleware, tenantMiddleware)
+  routes.use('*', authMiddleware, tenantMiddleware, pilotObservation)
   routes.get('/', async (c) => {
     const page = Number(c.req.query('page') ?? 1)
     const search = c.req.query('search') ?? ''

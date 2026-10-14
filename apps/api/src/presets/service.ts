@@ -5,6 +5,7 @@ import type { PresetPreview } from '@crm/shared'
 import type { TenantTx } from '../db/tenant-db'
 import { customFieldDefinitions, members, pipelines, pipelineStages, tenantModules, tenantPresets, tenants } from '../db/schema'
 import { getPreset } from './catalog'
+import { startPilot, recordPilotActivity } from '../onboarding/pilot'
 
 export async function previewPreset(db: TenantTx, tenantId: string, key: string): Promise<PresetPreview> {
   const preset = getPreset(key)
@@ -33,7 +34,7 @@ export async function previewPreset(db: TenantTx, tenantId: string, key: string)
     alreadyApplied: Boolean(applied), fingerprint }
 }
 
-export async function applyPreset(db: TenantTx, tenantId: string, memberId: string, key: string, fingerprint: string) {
+export async function applyPreset(db: TenantTx, tenantId: string, memberId: string, key: string, fingerprint: string, measureAction = true) {
   // La llamada corre dentro de la transacción RLS del request. El lock serializa
   // aplicaciones simultáneas y la consulta del miembro revalida permisos actuales.
   await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.id, tenantId)).for('update')
@@ -43,6 +44,7 @@ export async function applyPreset(db: TenantTx, tenantId: string, memberId: stri
   if (preview.conflicts.length) throw new HTTPException(409, { message: preview.conflicts.join(' ') })
   if (preview.alreadyApplied) return { applied: false, preview }
   if (fingerprint !== preview.fingerprint) throw new HTTPException(409, { message: 'La configuración cambió. Revisá una nueva vista previa antes de confirmar' })
+  await startPilot(db, tenantId, memberId)
   const preset = getPreset(key)!
   const existingPipeline = await db.query.pipelines.findFirst({ where: eq(pipelines.tenantId, tenantId) })
   const [pipeline] = await db.insert(pipelines).values({ tenantId, name: preset.pipelineName, isDefault: !existingPipeline }).returning()
@@ -55,5 +57,6 @@ export async function applyPreset(db: TenantTx, tenantId: string, memberId: stri
   }
   await db.insert(tenantModules).values({ tenantId, moduleKey: preset.module }).onConflictDoNothing()
   await db.insert(tenantPresets).values({ tenantId, presetKey: preset.key, version: preset.version, pipelineId: pipeline!.id })
+  if (measureAction) await recordPilotActivity(db, tenantId, memberId)
   return { applied: true, pipelineId: pipeline!.id, preview }
 }

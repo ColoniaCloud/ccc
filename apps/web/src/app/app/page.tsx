@@ -27,6 +27,9 @@ import {
 import { useApp } from './app-context'
 import { SetupWelcome } from '@/components/SetupWelcome'
 import { ActivationGuide } from '@/components/ActivationGuide'
+import { PilotMetrics } from '@/components/PilotMetrics'
+import { commercialSummary, pipelineSummary } from '@crm/shared'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@/components/ui/select'
 
 type Contact = {
   id: string
@@ -42,6 +45,7 @@ type Deal = {
   currency: string
   contactName: string | null
   stageId: string
+  pipelineId: string
 }
 
 type Task = {
@@ -52,13 +56,14 @@ type Task = {
   done: boolean
 }
 
-type Stage = { id: string; name: string; color: string; position: number }
+type Stage = { id: string; name: string; color: string; position: number; outcome: 'open' | 'won' | 'lost' }
+type Pipeline = { id: string; name: string; stages: Stage[] }
 type DashboardData = {
   contacts: Contact[]
   contactTotal: number
   deals: Deal[]
   tasks: Task[]
-  stages: Stage[]
+  pipelines: Pipeline[]
 }
 
 const STATUS_LABELS: Record<Contact['status'], string> = {
@@ -91,6 +96,7 @@ function isOverdue(date: string | null) {
 export default function AppHomePage() {
   const { me, apiFetch } = useApp()
   const [data, setData] = useState<DashboardData | null>(null)
+  const [pipelineId, setPipelineId] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -113,7 +119,7 @@ export default function AppHomePage() {
           contactsRes.json() as Promise<{ items: Contact[]; total?: number }>,
           dealsRes.json() as Promise<{ items: Deal[] }>,
           tasksRes.json() as Promise<{ items: Task[] }>,
-          pipelinesRes.json() as Promise<{ items: { stages: Stage[] }[] }>,
+          pipelinesRes.json() as Promise<{ items: Pipeline[] }>,
         ])
 
         if (!cancelled) {
@@ -122,7 +128,7 @@ export default function AppHomePage() {
             contactTotal: contactsData.total ?? contactsData.items.length,
             deals: dealsData.items,
             tasks: tasksData.items,
-            stages: pipelinesData.items[0]?.stages ?? [],
+            pipelines: pipelinesData.items,
           })
         }
       } catch (loadError: unknown) {
@@ -140,29 +146,18 @@ export default function AppHomePage() {
     const tasks = data?.tasks ?? []
     const pendingTasks = tasks.filter((task) => !task.done)
     const completedTasks = tasks.filter((task) => task.done).length
-    const usdPipeline = (data?.deals ?? [])
-      .filter((deal) => deal.currency === 'USD')
-      .reduce((total, deal) => total + (Number(deal.value) || 0), 0)
+    const commercial = commercialSummary(data?.deals ?? [], data?.pipelines ?? [])
 
     return {
       pendingTasks,
-      usdPipeline,
+      ...commercial,
       completionRate: tasks.length ? Math.round((completedTasks / tasks.length) * 100) : 0,
     }
   }, [data])
 
-  const stageSummaries = useMemo(() => {
-    if (!data) return []
-    const maximum = Math.max(1, ...data.stages.map((stage) => data.deals.filter((deal) => deal.stageId === stage.id).length))
-    return data.stages.map((stage) => {
-      const stageDeals = data.deals.filter((deal) => deal.stageId === stage.id)
-      return {
-        ...stage,
-        count: stageDeals.length,
-        width: `${Math.max(stageDeals.length ? 12 : 2, (stageDeals.length / maximum) * 100)}%`,
-      }
-    })
-  }, [data])
+  const selectedPipeline = data?.pipelines.find(p => p.id === pipelineId) ?? data?.pipelines[0]
+  const chart = pipelineSummary(data?.deals ?? [], selectedPipeline)
+  const stageSummaries = chart.stages
 
   const upcomingTasks = metrics.pendingTasks.slice(0, 5)
   const firstName = me.user.name.split(' ')[0]
@@ -195,6 +190,7 @@ export default function AppHomePage() {
       </div>
 
       <ActivationGuide />
+      <PilotMetrics />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -219,8 +215,8 @@ export default function AppHomePage() {
             <CardAction><span className="metric-icon"><HugeiconsIcon icon={KanbanIcon} strokeWidth={1.8} /></span></CardAction>
           </CardHeader>
           <CardContent>
-            <strong className="metric-value">{data ? data.deals.length : '—'}</strong>
-            <span className="metric-support">en el pipeline activo</span>
+            <strong className="metric-value">{data ? metrics.openCount : '—'}</strong>
+            <span className="metric-support">en todos tus procesos comerciales</span>
           </CardContent>
         </Card>
 
@@ -233,7 +229,7 @@ export default function AppHomePage() {
             <strong className="metric-value metric-value--money">
               {data ? formatMoney(String(metrics.usdPipeline), 'USD') : '—'}
             </strong>
-            <span className="metric-support">sin mezclar monedas</span>
+            <span className="metric-support">oportunidades abiertas, solo USD</span>
           </CardContent>
         </Card>
 
@@ -255,10 +251,11 @@ export default function AppHomePage() {
             <CardTitle>Estado del pipeline</CardTitle>
             <CardDescription>Distribución de oportunidades por etapa.</CardDescription>
             <CardAction>
-              <Badge variant="secondary">{data?.deals.length ?? 0} negocios</Badge>
+              <Badge variant="secondary">{chart.count} negocios</Badge>
             </CardAction>
           </CardHeader>
           <CardContent>
+            {data && data.pipelines.length > 1 && <Select value={selectedPipeline?.id} onValueChange={setPipelineId}><SelectTrigger className="mb-4 w-full" aria-label="Proceso comercial"><SelectValue /></SelectTrigger><SelectContent><SelectGroup>{data.pipelines.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectGroup></SelectContent></Select>}
             {error ? (
               <div className="dashboard-empty-compact">El pipeline no está disponible en este momento.</div>
             ) : !data ? (
@@ -283,7 +280,7 @@ export default function AppHomePage() {
           </CardContent>
           <CardFooter>
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/app/pipeline">
+              <Link href={selectedPipeline ? `/app/pipeline?pipelineId=${selectedPipeline.id}` : '/app/pipeline'}>
                 Abrir pipeline
                 <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} data-icon="inline-end" />
               </Link>
@@ -310,9 +307,9 @@ export default function AppHomePage() {
                     <span className="dashboard-task-check" aria-hidden="true" />
                     <div>
                       <strong>{task.title}</strong>
-                      <span className={isOverdue(task.dueDate) ? 'is-overdue' : undefined}>
+                      <span className={isOverdue(task.dueOn) ? 'is-overdue' : undefined}>
                         <HugeiconsIcon icon={Calendar01Icon} strokeWidth={1.8} />
-                        {isOverdue(task.dueDate) ? 'Venció ' : ''}{formatDueDate(task.dueDate)}
+                        {isOverdue(task.dueOn) ? 'Venció ' : ''}{formatDueDate(task.dueOn)}
                       </span>
                     </div>
                   </div>

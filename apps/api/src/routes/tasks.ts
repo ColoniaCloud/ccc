@@ -4,11 +4,12 @@ import { eq, and, asc } from 'drizzle-orm'
 import { tasks } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
+import { pilotObservation } from '../middleware/pilot'
 import type { HonoVariables } from '../types'
 import { saveTask } from '../agenda/tasks'
 import { isUuid } from '../catalogs/validation'
 const tasksRoutes = new Hono<{ Variables: HonoVariables }>()
-tasksRoutes.use('*', authMiddleware, tenantMiddleware)
+tasksRoutes.use('*', authMiddleware, tenantMiddleware, pilotObservation)
 tasksRoutes.use('*', async (c, next) => { c.header('Cache-Control', 'no-store'); await next() })
 tasksRoutes.get('/', async (c) => c.json({ status: 'ok', items: await c.get('db').query.tasks.findMany({
   where: eq(tasks.tenantId, c.get('tenantId')), orderBy: [asc(tasks.done), asc(tasks.dueOn)],

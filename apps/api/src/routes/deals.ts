@@ -6,6 +6,7 @@ import { validateDealCatalog, validateReferences } from '../catalogs/service'
 import { isUuid } from '../catalogs/validation'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
+import { pilotObservation } from '../middleware/pilot'
 import type { HonoVariables } from '../types'
 import type { DealCurrency } from '@crm/shared'
 
@@ -35,7 +36,7 @@ function validateBody(body: DealBody | null) {
   }
 }
 
-dealsRoutes.use('*', authMiddleware, tenantMiddleware)
+dealsRoutes.use('*', authMiddleware, tenantMiddleware, pilotObservation)
 
 dealsRoutes.get('/', async (c) => {
   const db       = c.get('db')
