@@ -120,3 +120,4 @@ export interface BusinessProfile {
   mainGoal:      BusinessGoal | null
 }
 export { commercialSummary, pipelineSummary } from './dashboard'
+export { dailyFocus, uruguayDay, appointmentIsPast } from './daily-focus'

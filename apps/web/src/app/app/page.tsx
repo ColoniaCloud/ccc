@@ -6,7 +6,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Add01Icon,
   ArrowRight01Icon,
-  Calendar01Icon,
   CheckListIcon,
   Contact01Icon,
   KanbanIcon,
@@ -28,6 +27,7 @@ import { useApp } from './app-context'
 import { SetupWelcome } from '@/components/SetupWelcome'
 import { ActivationGuide } from '@/components/ActivationGuide'
 import { PilotMetrics } from '@/components/PilotMetrics'
+import { DailyFocus } from '@/components/DailyFocus'
 import { commercialSummary, pipelineSummary } from '@crm/shared'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@/components/ui/select'
 
@@ -81,16 +81,6 @@ function formatMoney(value: string, currency: string) {
     currency,
     maximumFractionDigits: 0,
   }).format(numericValue)
-}
-
-function formatDueDate(date: string | null) {
-  if (!date) return 'Sin fecha'
-  return new Intl.DateTimeFormat('es-UY', { timeZone: 'UTC', day: 'numeric', month: 'short' }).format(new Date(`${date.slice(0, 10)}T12:00:00Z`))
-}
-
-function isOverdue(date: string | null) {
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Montevideo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
-  return Boolean(date && date.slice(0, 10) < today)
 }
 
 export default function AppHomePage() {
@@ -159,7 +149,6 @@ export default function AppHomePage() {
   const chart = pipelineSummary(data?.deals ?? [], selectedPipeline)
   const stageSummaries = chart.stages
 
-  const upcomingTasks = metrics.pendingTasks.slice(0, 5)
   const firstName = me.user.name.split(' ')[0]
 
   return (
@@ -190,7 +179,7 @@ export default function AppHomePage() {
       </div>
 
       <ActivationGuide />
-      <PilotMetrics />
+      <DailyFocus key={me.tenant.id} />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -245,7 +234,7 @@ export default function AppHomePage() {
         </Card>
       </div>
 
-      <div className="dashboard-main-grid">
+      <div className="grid gap-4">
         <Card className="dashboard-pipeline-card">
           <CardHeader>
             <CardTitle>Estado del pipeline</CardTitle>
@@ -288,44 +277,6 @@ export default function AppHomePage() {
           </CardFooter>
         </Card>
 
-        <Card className="dashboard-tasks-card">
-          <CardHeader>
-            <CardTitle>Próximas tareas</CardTitle>
-            <CardDescription>Tu foco para los siguientes días.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error ? (
-              <div className="dashboard-empty-compact">Las tareas no están disponibles en este momento.</div>
-            ) : !data ? (
-              <div className="dashboard-loading-block">Cargando tareas…</div>
-            ) : upcomingTasks.length === 0 ? (
-              <div className="dashboard-empty-compact">No tenés tareas pendientes.</div>
-            ) : (
-              <div className="dashboard-task-list">
-                {upcomingTasks.map((task) => (
-                  <div className="dashboard-task" key={task.id}>
-                    <span className="dashboard-task-check" aria-hidden="true" />
-                    <div>
-                      <strong>{task.title}</strong>
-                      <span className={isOverdue(task.dueOn) ? 'is-overdue' : undefined}>
-                        <HugeiconsIcon icon={Calendar01Icon} strokeWidth={1.8} />
-                        {isOverdue(task.dueOn) ? 'Venció ' : ''}{formatDueDate(task.dueOn)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-          <CardFooter>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/app/tasks">
-                Ver todas las tareas
-                <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} data-icon="inline-end" />
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
       </div>
 
       <Card className="dashboard-contacts-card">
@@ -361,6 +312,7 @@ export default function AppHomePage() {
           )}
         </CardContent>
       </Card>
+      <PilotMetrics />
     </div>
   )
 }

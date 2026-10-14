@@ -1,4 +1,5 @@
 import { and, asc, eq } from 'drizzle-orm'
+import { appointmentIsPast } from '@crm/shared'
 import type { TenantTx } from '../db/tenant-db'
 import { appointments, tasks, contacts, properties, vehicles, deals, pipelineStages, pipelines, members, user } from '../db/schema'
 
@@ -31,13 +32,13 @@ export async function agenda(db: TenantTx, tenantId: string, now = new Date()) {
     // Una visita de otro interesado a la misma ficha no cuenta como seguimiento.
     const pendingAppointments = appointmentItems.filter((item) => item.status === 'scheduled' && deal.contactId && item.contactId === deal.contactId &&
       ((deal.propertyId && item.propertyId === deal.propertyId) || (deal.vehicleId && item.vehicleId === deal.vehicleId)))
-    const hasFuture = pendingTasks.some((task) => task.dueOn! >= today) || pendingAppointments.some((item) => item.scheduledAt >= now)
-    const overdue = pendingTasks.some((task) => task.dueOn! < today) || pendingAppointments.some((item) => item.scheduledAt < now)
+    const hasFuture = pendingTasks.some((task) => task.dueOn! >= today) || pendingAppointments.some((item) => !appointmentIsPast(item, now))
+    const overdue = pendingTasks.some((task) => task.dueOn! < today) || pendingAppointments.some((item) => appointmentIsPast(item, now))
     return { ...deal, needsFollowUp: !hasFuture, overdue, nextTask: pendingTasks.find((task) => task.dueOn! >= today) ?? null,
-      nextAppointment: pendingAppointments.find((item) => item.scheduledAt >= now) ?? null }
+      nextAppointment: pendingAppointments.find((item) => !appointmentIsPast(item, now)) ?? null }
   })
   return { today, timeZone: 'America/Montevideo', tasks: taskItems, appointments: appointmentItems, followUp,
     counts: { overdueTasks: taskItems.filter((task) => !task.done && task.dueOn && task.dueOn < today).length,
-      overdueAppointments: appointmentItems.filter((item) => item.status === 'scheduled' && item.scheduledAt < now).length,
+      overdueAppointments: appointmentItems.filter((item) => item.status === 'scheduled' && appointmentIsPast(item, now)).length,
       withoutFollowUp: followUp.filter((item) => item.needsFollowUp).length } }
 }
