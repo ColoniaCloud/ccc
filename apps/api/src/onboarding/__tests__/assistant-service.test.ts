@@ -73,6 +73,8 @@ describe('onboarding con aprobación y conversación guardada', () => {
     expect(await database.select().from(schema.customFieldDefinitions)).toHaveLength(6)
     expect((await service.apply(A,OWNER,view.session!.revision,approval.fingerprint)).session?.status).toBe('completed')
     expect(await database.select().from(schema.tenantPresets)).toHaveLength(2)
+    expect((await database.select().from(schema.pilotActivityDaily))[0]?.actions).toBe(1)
+    expect((await database.select().from(schema.pilotMilestones)).map(m => m.key)).toContain('onboarding_completed')
   })
   it('bloquea revisiones viejas y configuración modificada después de revisar', async () => {
     const view = await ready(), approval = await service.preview(A,OWNER,view.session!.revision)

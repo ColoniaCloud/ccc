@@ -119,3 +119,4 @@ export interface BusinessProfile {
   salesCycle:    BusinessSalesCycle | null
   mainGoal:      BusinessGoal | null
 }
+export { commercialSummary, pipelineSummary } from './dashboard'

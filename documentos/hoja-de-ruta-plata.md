@@ -138,7 +138,7 @@ Procedimiento y límites del piloto en [agenda-calendar.md](agenda-calendar.md).
 
 ## Quinta entrega: recorrido de activación del piloto
 
-Implementada en `codex/pilot-activation`, pendiente de publicación:
+Publicada en main (`a8159f2`) y verificada en producción:
 
 - El resumen muestra los cinco pasos para poner en marcha inmobiliarias/automotor:
   configuración, ficha, contacto, oportunidad vinculada y seguimiento con fecha/responsable.
@@ -156,6 +156,32 @@ Este avance representa la situación de los datos conservados. No es una bitáco
 histórica ni una medición de retención; al eliminar los registros de prueba puede
 retroceder. El piloto con negocios reales requiere elegir sus organizaciones y que
 cada participante autorice las conexiones que utilice.
+
+Publicación: [Deploy VPS](https://github.com/ColoniaCloud/ccc/actions/runs/38413581426)
+exitoso tras reintentar una conexión SSH que agotó el tiempo antes de ejecutar comandos.
+Backup previo restaurado: `/root/backups/plata-20261013T142412Z-pre-activation/`.
+
+## Sexta entrega: medición del piloto
+
+Implementada en `codex/pilot-measurement`, pendiente de publicación:
+
+- Inicio explícito por propietario/admin o al intentar la primera escritura comercial.
+  Consultar pantallas no inicia la medición. Una solicitud rechazada no suma actividad.
+- Línea de base antes de modificar registros: los hitos existentes se identifican como
+  anteriores, sin inventar fechas históricas ni duración de activación.
+- Primera comprobación de cada hito conservada; no retrocede al eliminar registros.
+  Onboarding aprobado se distingue del recorrido comercial completo.
+- Acciones comerciales aceptadas y días activos por organización, con cuatro semanas
+  de lunes a domingo en hora de Uruguay. Una importación cuenta una solicitud.
+  No constituye medición de sesiones, retención de usuarios o frecuencia de login.
+- Métricas agregadas sin nombres, emails, IPs ni contenidos; lectura solo propietario/admin.
+  Cambiar el rubro pausa la actividad para no mezclar poblaciones.
+- Migración 0014 con tres tablas, FORCE RLS, permisos y eliminación en cascada.
+- 153 pruebas automatizadas, tipos y compilación correctos. Navegador local con
+  PostgreSQL: recorrido completo, duración, hitos tras borrar, denegación a support,
+  aislamiento y pantalla móvil de 360 px con selección de proceso.
+- El resumen comercial excluye cierres de los negocios abiertos y del importe activo
+  en USD, y permite elegir el proceso que grafica con un conteo coherente.
 
 ## Siguientes entregas
 

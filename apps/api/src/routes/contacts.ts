@@ -6,6 +6,7 @@ import type { TenantTx } from '../db/tenant-db'
 import { contacts, tags, contactTags, customFieldDefinitions, contactActivities } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { tenantMiddleware } from '../middleware/tenant'
+import { pilotObservation } from '../middleware/pilot'
 import type { HonoVariables } from '../types'
 import type { ContactStatus } from '@crm/shared'
 import { validateCustomFieldsPatch } from '../contacts/custom-fields-validation'
@@ -34,7 +35,7 @@ async function getContactFieldDefinitions(db: TenantTx, tenantId: string) {
 
 const contactsRoutes = new Hono<{ Variables: HonoVariables }>()
 
-contactsRoutes.use('*', authMiddleware, tenantMiddleware)
+contactsRoutes.use('*', authMiddleware, tenantMiddleware, pilotObservation)
 
 contactsRoutes.get('/', async (c) => {
   const db = c.get('db')

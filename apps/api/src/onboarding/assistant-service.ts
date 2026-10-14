@@ -7,6 +7,7 @@ import { tenants, members, onboardingSessions } from '../db/schema'
 import { previewPreset, applyPreset } from '../presets/service'
 import { allowedPresets, validateProposal, validateRevision, profileFingerprint, MAX_SETUP_ATTEMPTS, REQUEST_LEASE_MS } from './assistant-policy'
 import type { SetupAssistant } from './anthropic'
+import { startPilot, recordPilotActivity } from './pilot'
 
 export type TenantRunner = <T>(tenantId: string, run: (tx: TenantTx) => Promise<T>) => Promise<T>
 const busy = (session: typeof onboardingSessions.$inferSelect | undefined) => Boolean(session?.pendingRequestId && session.requestStartedAt && Date.now() - session.requestStartedAt.getTime() < REQUEST_LEASE_MS)
@@ -102,14 +103,16 @@ export class OnboardingAssistantService {
       if (!session || session.status !== 'ready' || busy(session) || session.revision !== expected) throw new HTTPException(409, { message: 'La propuesta cambió. Revisala nuevamente' })
       const approval = await this.approval(tx, tenant, session)
       if (approval.conflicts.length || approval.fingerprint !== fingerprint) throw new HTTPException(409, { message: approval.conflicts.join(' ') || 'La configuración cambió. Revisá nuevamente los cambios' })
+      await startPilot(tx, tenantId, memberId)
       for (const key of session.proposal!.presets) {
         // La aprobación conjunta cubre el estado inicial; los campos compartidos
         // se recalculan dentro de esta misma transacción tras aplicar cada plantilla.
         const preview = await previewPreset(tx, tenantId, key)
-        await applyPreset(tx, tenantId, memberId, key, preview.fingerprint)
+        await applyPreset(tx, tenantId, memberId, key, preview.fingerprint, false)
       }
       const [updatedTenant] = await tx.update(tenants).set({ setupRequired: false, updatedAt: new Date() }).where(eq(tenants.id, tenantId)).returning()
       const [updated] = await tx.update(onboardingSessions).set({ status: 'completed', revision: session.revision + 1, updatedAt: new Date() }).where(eq(onboardingSessions.tenantId, tenantId)).returning()
+      await recordPilotActivity(tx, tenantId, memberId)
       return this.view(updatedTenant!, updated)
     })
   }
