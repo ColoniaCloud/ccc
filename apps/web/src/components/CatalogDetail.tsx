@@ -7,6 +7,7 @@ import type { CatalogKind } from '@crm/shared'
 import { useApp } from '@/app/app/app-context'
 import { CATALOGS, STATUS_LABELS, catalogFields, priceLabel, type CatalogRecord } from '@/lib/catalogs'
 import { CatalogForm } from './CatalogForm'
+import { CatalogPhotos } from './CatalogPhotos'
 import { loadContactOptions } from '@/lib/contact-options'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -99,6 +100,7 @@ export function CatalogDetail({ kind }: { kind: CatalogKind }) {
         <Badge variant="secondary">{STATUS_LABELS[detail.item.status]}</Badge>
         {canWrite && <><Button variant="outline" onClick={() => setEditing(true)}>Editar ficha</Button>{detail.item.status !== 'archived' && <Button variant="outline" disabled={busy} onClick={() => setArchiving(true)}>Archivar</Button>}</>}
       </div></div>
+      <CatalogPhotos key={`${me.tenant.id}-${kind}-${id}`} kind={kind} assetId={id} title={detail.item.title} />
       <div className="grid items-start gap-4 xl:grid-cols-2">
         <Card><CardHeader><CardTitle>Datos comerciales</CardTitle><CardDescription>La ficha pertenece a {me.tenant.name}.</CardDescription></CardHeader><CardContent>
           <dl className="grid gap-4 sm:grid-cols-2">{catalogFields(kind).filter((field) => !['title','price','currency','status'].includes(field.key)).map((field) => <div key={field.key}>

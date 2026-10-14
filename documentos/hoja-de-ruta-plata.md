@@ -183,6 +183,20 @@ Implementada en `codex/pilot-measurement`, pendiente de publicación:
 - El resumen comercial excluye cierres de los negocios abiertos y del importe activo
   en USD, y permite elegir el proceso que grafica con un conteo coherente.
 
+## Septima entrega: fotos privadas del catalogo
+
+Implementada en `codex/catalog-photos`, sobre la medicion del piloto y pendiente de publicacion:
+
+- Galeria en el detalle de propiedades y vehiculos: carga multiple, ampliacion,
+  portada, orden y eliminacion confirmada. Support solo tiene lectura.
+- Imagenes optimizadas a WebP sin EXIF/GPS, con limites de carga, dimensiones,
+  cantidad, almacenamiento por organizacion y concurrencia de procesamiento.
+- Bytes y metadatos persistidos en PostgreSQL; backups existentes incluyen fotos.
+  Migracion 0015 con FORCE RLS, FKs compuestos y eliminacion en cascada.
+- Acceso autenticado, respuestas privadas y sin enlaces publicos compartibles.
+- Pruebas de seguridad, orientacion, orden, limites, rollback, ambos catalogos y
+  pantalla movil de 360 px. Detalles operativos en [catalogo-fotos.md](catalogo-fotos.md).
+
 ## Siguientes entregas
 
 1. Piloto del onboarding: revisar finalización y primera operación con negocios reales;
