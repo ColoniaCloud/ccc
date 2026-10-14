@@ -1,5 +1,5 @@
 import { and, eq, isNotNull, sql } from 'drizzle-orm'
-import { appointmentIsPast } from '@crm/shared'
+import { appointmentIsPast } from '@crm/shared/src/appointment-time.js'
 import type { TenantTx } from '../db/tenant-db'
 import { tenants, tenantModules, pipelines, contacts, properties, vehicles, deals, pipelineStages, calendarConnections, calendarEventSync } from '../db/schema'
 import { agenda } from '../agenda/service'

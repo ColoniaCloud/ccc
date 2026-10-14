@@ -1,10 +1,9 @@
+import { appointmentIsPast } from './appointment-time.js'
+export { appointmentIsPast } from './appointment-time.js'
 type Assigned = { id: string; assignedTo: string | null }
 type Task = Assigned & { done: boolean; dueOn: string | null }
 type Appointment = Assigned & { status: string; scheduledAt: string; durationMinutes: number }
 type Deal = Assigned & { needsFollowUp: boolean }
-export function appointmentIsPast(item: { scheduledAt: string | Date; durationMinutes: number }, now = new Date()) {
-  return new Date(item.scheduledAt).getTime() + item.durationMinutes * 60000 <= now.getTime()
-}
 export const uruguayDay = (now: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Montevideo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 export function dailyFocus<T extends Task, A extends Appointment, D extends Deal>(data: { tasks: T[]; appointments: A[]; followUp: D[] }, responsible: string, now = new Date()) {
   const today = uruguayDay(now), end = new Date(`${today}T12:00:00Z`); end.setUTCDate(end.getUTCDate() + 6)
