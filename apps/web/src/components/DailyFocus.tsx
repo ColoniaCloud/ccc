@@ -34,7 +34,7 @@ export function DailyFocus() {
     return () => { clearInterval(timer); document.removeEventListener('visibilitychange', refresh) }
   }, [])
   const focus = data ? dailyFocus(data, responsible, now) : null
-  function href(tab: string, extra: Record<string,string> = {}) { return `/app/agenda?${new URLSearchParams({ tab, responsible, organization: me.tenant.slug, ...extra })}` }
+  function href(tab: string, extra: Record<string,string> = {}) { return `/app/agenda?${new URLSearchParams({ tab, responsible, organization: me.tenant.slug, ...(tab === 'pending' && focus ? { from: focus.today, to: focus.lastDay } : {}), ...extra })}` }
   function group(title: string, items: { id: string; title: string; description: string; href: string }[], link: string) {
     if (!items.length) return null
     return <section className="flex flex-col gap-2"><div className="flex items-center justify-between gap-2"><h3 className="font-medium">{title}</h3><Badge variant="secondary">{items.length}</Badge></div>{items.slice(0,3).map(item => <Link key={item.id} className="rounded-md border p-3" href={item.href}><p className="break-words font-medium">{item.title}</p><p className="text-sm text-muted-foreground">{item.description}</p></Link>)}{items.length > 3 && <Button asChild size="sm" variant="ghost" className="self-start"><Link href={link}>Ver los {items.length} en Agenda</Link></Button>}</section>
