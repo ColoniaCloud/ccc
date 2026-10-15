@@ -3,6 +3,7 @@ import type { TenantTx } from '../db/tenant-db'
 import { tenants, onboardingSessions, pilotMeasurements, pilotMilestones, pilotActivityDaily, type PilotMilestoneKey } from '../db/schema'
 import { activation } from './activation'
 import { localToday } from '../agenda/service'
+import { quotaSnapshot } from './ai-quota'
 
 const LABELS: Record<PilotMilestoneKey, string> = { configuration: 'CRM preparado', inventory: 'Primera ficha', contact: 'Primer contacto', opportunity: 'Primera oportunidad vinculada', follow_up: 'Primer seguimiento', activation_ready: 'Recorrido de activación completo', onboarding_completed: 'Onboarding aprobado' }
 async function capture(tx: TenantTx, tenantId: string, memberId: string, source: 'baseline' | 'activity', now: Date) {
@@ -56,4 +57,15 @@ export async function pilotReport(tx: TenantTx, tenantId: string, now = new Date
     milestones: milestones.map(item => ({ key: item.key, label: LABELS[item.key], source: item.source, observedAt: item.observedAt })),
     weeks: periods.map(period => { const rows = days.filter(day => day.day >= period.from && day.day <= period.to); return { ...period, activeDays: rows.length, actions: rows.reduce((sum, row) => sum + row.actions, 0) } }),
   }
+}
+
+export async function pilotEvidence(tx: TenantTx, tenantId: string, now = new Date()) {
+  const report = await pilotReport(tx, tenantId, now)
+  if (!report.supported) return null
+  return { version: 1, generatedAt: now.toISOString(), timeZone: 'America/Montevideo',
+    measurement: report, ai: await quotaSnapshot(tx, tenantId, now),
+    notes: ['Los hitos baseline ya existían al comenzar y no prueban una conversión durante el piloto.',
+      'La actividad muestra las últimas cuatro semanas calendario; no representa ventas ni ingresos.',
+      'La IA corresponde al mes calendario indicado, no a todo el piloto. La contabilidad comenzó con el despliegue de cuotas.',
+      'Los tokens son los conocidos; las solicitudes fallidas pueden tener consumo desconocido. No es una factura.'] }
 }

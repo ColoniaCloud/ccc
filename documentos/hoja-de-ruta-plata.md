@@ -234,13 +234,22 @@ Publicada mediante PR #7 en main `a0b6af5`, con backup restaurado de prueba y sa
 
 ## Décima entrega: cuotas mensuales de IA
 
-Implementada en `codex/ai-plan-quotas`, pendiente de publicación:
+Publicada mediante PR #8 en main `c621009`, con backup restaurado de prueba, migración 0016, RLS y lecturas de cuota verificadas en producción:
 
 - Límites aprobados por organización: Free 10, Pro 40, Business 100, Master 250 y Enterprise 500; renovación mensual a medianoche de Uruguay.
 - Reserva atómica antes del proveedor, incluso ante fallos, y registro idempotente de tokens conocidos en el mes original. No consume un rechazo previo de permisos o validación.
 - Resumen en onboarding y Facturación; agotarse la cuota permite seguir editando y aplicando manualmente.
 - Reemplaza el límite vitalicio de veinte intentos, preservando conversación y contadores históricos. Nueva contabilidad desde el despliegue, sin cobro ni cambios de precios.
 - Migración 0016 con RLS forzada, configuración por entorno y documentación en `documentos/cuotas-ia.md`.
+
+## Preparación operativa del piloto
+
+Implementada en `codex/pilot-evidence`, pendiente de publicación:
+
+- Descarga de un informe JSON desde Medición del piloto para propietario y administradores, con hitos, últimas cuatro semanas de actividad y cuota del mes.
+- Distingue hitos baseline, métricas de actividad y tokens conocidos. La descarga es de lectura y no inicia la medición ni llama a Anthropic.
+- Sin nombres de contactos, correos ni conversaciones; la descarga conserva métricas internas del negocio y debe almacenarse en privado.
+- Guía de siete días y criterios propuestos de salida en `documentos/piloto-operativo.md`. La prueba local no sustituye el uso de dos negocios reales.
 
 ## Siguientes entregas
 

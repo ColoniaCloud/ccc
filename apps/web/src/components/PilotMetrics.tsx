@@ -27,9 +27,21 @@ export function PilotMetrics() {
     catch (err) { setError(err instanceof Error ? err.message : 'No se pudo iniciar la medición') }
     finally { setBusy(false) }
   }
+  async function download() {
+    setBusy(true); setError('')
+    try {
+      const res = await apiFetch('/api/pilot/export')
+      if (!res.ok) { const body = await res.json(); throw new Error(body.error ?? 'No se pudo descargar el informe') }
+      const url = URL.createObjectURL(await res.blob()), link = document.createElement('a')
+      link.href = url; link.download = `plata-piloto-${me.tenant.slug}.json`; document.body.appendChild(link); link.click(); link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo descargar el informe') }
+    finally { setBusy(false) }
+  }
   if (!allowed || report?.supported === false) return null
   return <Card><CardHeader><CardTitle>Medición del piloto</CardTitle><CardDescription>Hitos conservados y actividad comercial de {me.tenant.name}. Las semanas siguen la hora de Uruguay.</CardDescription></CardHeader><CardContent className="flex flex-col gap-4">
     {error && <Alert variant="destructive"><AlertDescription>{error} <Button variant="outline" size="sm" onClick={() => setRevision(n => n + 1)}>Reintentar</Button></AlertDescription></Alert>}
+    {report && <div className="flex flex-col items-start gap-2"><Button variant="outline" disabled={busy} onClick={() => void download()}>Descargar informe del piloto</Button><p className="text-xs text-muted-foreground">Incluye hitos, cuatro semanas de actividad y consumo de IA del mes. Sin nombres de contactos ni conversaciones.</p></div>}
     {!report && !error ? <Skeleton className="h-24 w-full" /> : report && !report.startedAt ? <><p className="text-sm text-muted-foreground">La medición empieza al realizar una acción comercial o al pulsar este botón. Los registros anteriores se marcan como existentes, sin atribuirles una fecha histórica.</p><Button className="self-start" onClick={start} disabled={busy}>{busy ? 'Iniciando…' : 'Comenzar medición'}</Button></> : report && <>
       <p className="text-sm">Comenzó el {date(report.startedAt!)}. {report.secondsToActivation !== null ? `Recorrido de activación completado en ${Math.ceil(report.secondsToActivation / 60)} minutos desde el inicio de la medición.` : 'El tiempo hasta la activación se mide únicamente cuando se completa durante el piloto.'}</p>
       {!report.currentIndustryMatches && <Alert><AlertDescription>El rubro cambió. Se conserva la medición anterior y se pausa el registro de actividad para evitar mezclar rubros.</AlertDescription></Alert>}
