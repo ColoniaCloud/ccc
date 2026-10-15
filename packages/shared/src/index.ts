@@ -53,7 +53,11 @@ export type SetupProposal = {
   presets: PresetKey[]
   recommendations: string[]
   connections: { tool: string; purpose: string }[]
+  processes?: SetupProcess[]
+  fields?: SetupField[]
 }
+export type SetupProcess = { presetKey: PresetKey; name: string; openStages: string[]; wonLabel: string; lostLabel: string }
+export type SetupField = { key: string; label: string; fieldType: CustomFieldType; options?: string[] }
 export type SetupTurn = { reply: string; proposal: SetupProposal | null }
 export type SetupSnapshot = {
   name: string
@@ -76,6 +80,7 @@ export interface PresetPreview {
   conflicts: string[]
   alreadyApplied: boolean
   fingerprint: string
+  additionalProcess?: boolean
 }
 
 export type CustomFieldType = 'text' | 'number' | 'date' | 'boolean' | 'select'

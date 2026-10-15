@@ -28,4 +28,8 @@ setupRoutes.post('/apply', async (c) => {
 })
 setupRoutes.post('/defer', async (c) => c.json({ status: 'ok', ...await service.defer(c.get('tenantId'), c.get('memberId')) }))
 setupRoutes.post('/resume', async (c) => c.json({ status: 'ok', ...await service.resume(c.get('tenantId'), c.get('memberId')) }))
+setupRoutes.post('/refine', async c => {
+  const body = await c.req.json().catch(() => null)
+  return c.json({ status: 'ok', ...await service.refine(c.get('tenantId'), c.get('memberId'), body?.revision) })
+})
 export { setupRoutes }
