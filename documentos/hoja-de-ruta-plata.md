@@ -214,7 +214,7 @@ Publicada en PR #6, merge `2dbf30d` y corrección Node 20 `62c79be`, con CI y de
 
 ## Novena entrega: onboarding personalizado
 
-Implementada en `codex/onboarding-personalization`, pendiente de publicación:
+Publicada mediante PR #7 en main `a0b6af5`, con backup restaurado de prueba y salud verificada en producción:
 
 - Anthropic puede proponer un proceso adaptado por plantilla elegida, con nombre,
   una a ocho etapas abiertas y dos cierres que mantienen resultados ganado/perdido.
@@ -232,10 +232,20 @@ Implementada en `codex/onboarding-personalization`, pendiente de publicación:
 - Se usan los JSON existentes, sin nuevas migraciones ni dependencias. Una aprobación
   conjunta se aplica atómicamente y cuenta una acción de actividad del piloto.
 
+## Décima entrega: cuotas mensuales de IA
+
+Implementada en `codex/ai-plan-quotas`, pendiente de publicación:
+
+- Límites aprobados por organización: Free 10, Pro 40, Business 100, Master 250 y Enterprise 500; renovación mensual a medianoche de Uruguay.
+- Reserva atómica antes del proveedor, incluso ante fallos, y registro idempotente de tokens conocidos en el mes original. No consume un rechazo previo de permisos o validación.
+- Resumen en onboarding y Facturación; agotarse la cuota permite seguir editando y aplicando manualmente.
+- Reemplaza el límite vitalicio de veinte intentos, preservando conversación y contadores históricos. Nueva contabilidad desde el despliegue, sin cobro ni cambios de precios.
+- Migración 0016 con RLS forzada, configuración por entorno y documentación en `documentos/cuotas-ia.md`.
+
 ## Siguientes entregas
 
 1. Piloto del onboarding: revisar finalización y primera operación con negocios reales;
-   ampliar plantillas/personalización según esas observaciones y definir cuotas por plan.
+   ampliar plantillas/personalización según esas observaciones y revisar el consumo de las cuotas aprobadas.
 2. Mejoras del catálogo según el piloto: fotos y recordatorios;
    ampliar atributos y procesos a partir del uso real de inmobiliarias y automotor.
 3. MarketDeck v1: Instagram y páginas de Facebook, contenido aprobado, programación,
@@ -250,7 +260,7 @@ Implementada en `codex/onboarding-personalization`, pendiente de publicación:
 El piloto excluye contratos, facturación fiscal, administración de alquileres,
 financiación y gestión de taller. Métricas: finalización de onboarding, primera operación,
 uso semanal y oportunidades atribuibles a MarketDeck. Planes: separar herramientas,
-usuarios y cuotas de consumo de IA/integraciones; precios y límites quedan por definir.
+usuarios y cuotas de consumo de IA/integraciones; las cuotas del asistente ya están aprobadas, otros límites y precios quedan por definir.
 
 ## Publicación y revisión
 

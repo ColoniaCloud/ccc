@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto'
 import type { BusinessProfile, PresetKey, SetupProposal, SetupTurn, SetupProcess, SetupField, CustomFieldType } from '@crm/shared'
 import { HTTPException } from 'hono/http-exception'
 
-export const MAX_SETUP_ATTEMPTS = 20
 export const REQUEST_LEASE_MS = 120000
 export function profileFingerprint(profile: BusinessProfile | null) { return createHash('sha256').update(JSON.stringify(profile)).digest('hex') }
 export function allowedPresets(profile: BusinessProfile | null): PresetKey[] {

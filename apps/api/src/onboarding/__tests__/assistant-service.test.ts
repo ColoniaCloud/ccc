@@ -8,7 +8,8 @@ import type { BusinessProfile, SetupProposal } from '@crm/shared'
 import * as schema from '../../db/schema'
 import type { TenantTx } from '../../db/tenant-db'
 import { OnboardingAssistantService, type TenantRunner } from '../assistant-service'
-import { validateProposal, validateRevision, MAX_SETUP_ATTEMPTS } from '../assistant-policy'
+import { validateProposal, validateRevision } from '../assistant-policy'
+import { aiPeriod, aiLimit, reserveAi, finishAi, quotaSnapshot } from '../ai-quota'
 import type { SetupAssistant } from '../anthropic'
 
 const A = '11111111-1111-1111-1111-111111111111', B = '22222222-2222-2222-2222-222222222222'
@@ -115,7 +116,7 @@ describe('onboarding con aprobación y conversación guardada', () => {
     view = await service.apply(A,OWNER,view.session!.revision,approval.fingerprint)
     await expect(service.refine(A,SELLER,view.session!.revision)).rejects.toMatchObject({status:403})
     await expect(service.refine(A,OWNER,0)).rejects.toMatchObject({status:409})
-    await database.update(schema.onboardingSessions).set({attempts:MAX_SETUP_ATTEMPTS}).where(eq(schema.onboardingSessions.tenantId,A))
+    await database.update(schema.aiMonthlyUsage).set({used:10}).where(eq(schema.aiMonthlyUsage.tenantId,A))
     view = await service.refine(A,ADMIN,view.session!.revision)
     await expect(service.message(A,OWNER,'Más preguntas',view.session!.revision)).rejects.toMatchObject({status:429})
     expect(view.session?.messages).toHaveLength(2); expect(view.session?.proposal?.processes).toEqual([])
@@ -266,9 +267,11 @@ describe('onboarding con aprobación y conversación guardada', () => {
     expect((await service.get(A,OWNER)).session?.messages).toHaveLength(0)
   })
   it('limita consumo y permite recuperar un pedido que quedó abandonado', async () => {
-    await database.insert(schema.onboardingSessions).values({tenantId:A, attempts:MAX_SETUP_ATTEMPTS})
+    await database.insert(schema.onboardingSessions).values({tenantId:A, attempts:100})
+    await database.insert(schema.aiMonthlyUsage).values({tenantId:A,period:aiPeriod().period,used:10})
     await expect(service.message(A,OWNER,'Consultar',1)).rejects.toMatchObject({status:429})
-    await database.update(schema.onboardingSessions).set({attempts:0,pendingRequestId:OTHER,requestStartedAt:new Date(Date.now()-180000)}).where(eq(schema.onboardingSessions.tenantId,A))
+    await database.update(schema.aiMonthlyUsage).set({used:0}).where(eq(schema.aiMonthlyUsage.tenantId,A))
+    await database.update(schema.onboardingSessions).set({attempts:100,pendingRequestId:OTHER,requestStartedAt:new Date(Date.now()-180000)}).where(eq(schema.onboardingSessions.tenantId,A))
     expect((await service.message(A,OWNER,'Recuperar',1)).session?.status).toBe('ready')
   })
   it('rechaza propuestas ajenas al nicho y normaliza sin aceptar instrucciones de ejecución', () => {
@@ -278,4 +281,58 @@ describe('onboarding con aprobación y conversación guardada', () => {
     expect(validateProposal({...proposal,execute:'DELETE ALL',connections:[{tool:'WhatsApp',purpose:'Contactar',connected:true}]},profile)).toEqual({...proposal,connections:[{tool:'WhatsApp',purpose:'Contactar'}]})
     for(const revision of [-1,1.5,'1',null,NaN]) expect(()=>validateRevision(revision)).toThrow()
   })
+})
+
+describe('cuotas mensuales por organización', () => {
+  it('usa los límites aprobados y configuración validada', () => {
+    expect(['free','pro','business','master','enterprise'].map(aiLimit)).toEqual([10,40,100,250,500])
+    vi.stubEnv('AI_MONTHLY_LIMIT_FREE','0'); expect(aiLimit('free')).toBe(0)
+    vi.stubEnv('AI_MONTHLY_LIMIT_FREE','abc'); expect(()=>aiLimit('free')).toThrow()
+    vi.unstubAllEnvs(); expect(aiLimit('unknown')).toBe(0)
+  })
+  it('renueva en el cambio de mes uruguayo y cambia de año', () => {
+    expect(aiPeriod(new Date('2026-11-01T02:59:59Z')).period).toBe('2026-10-01')
+    expect(aiPeriod(new Date('2026-11-01T03:00:00Z')).period).toBe('2026-11-01')
+    expect(aiPeriod(new Date('2026-12-31T23:00:00Z')).resetsOn).toBe('2027-01-01')
+  })
+  it('finaliza una sola vez y registra tokens en el mes reservado', async () => {
+    const id='cccccccc-cccc-cccc-cccc-cccccccccccc', start=new Date('2026-11-01T02:59:00Z')
+    await scoped(A,tx=>reserveAi(tx,A,id,start))
+    await scoped(A,tx=>finishAi(tx,A,id,{inputTokens:50,outputTokens:7},new Date('2026-11-01T03:01:00Z')))
+    await scoped(A,tx=>finishAi(tx,A,id,{inputTokens:50,outputTokens:7}))
+    await scoped(A,tx=>finishAi(tx,A,id))
+    const october=await scoped(A,tx=>quotaSnapshot(tx,A,start))
+    expect(october).toMatchObject({used:1,inputTokens:50,outputTokens:7,remaining:9})
+    expect(await scoped(A,tx=>quotaSnapshot(tx,A,new Date('2026-11-01T03:01:00Z')))).toMatchObject({used:0,remaining:10})
+    expect(await scoped(B,tx=>quotaSnapshot(tx,B,start))).toMatchObject({used:0})
+  })
+  it('cuenta fallos del proveedor pero no peticiones inválidas y conserva consumo al cambiar plan', async () => {
+    provider.generate.mockRejectedValue(new Error('provider unavailable'))
+    await expect(service.message(A,OWNER,'consulta',0)).rejects.toMatchObject({status:502})
+    expect((await service.get(A,OWNER)).quota.used).toBe(1)
+    await expect(service.message(A,OWNER,'',0)).rejects.toMatchObject({status:400})
+    await expect(service.message(A,SELLER,'consulta',0)).rejects.toMatchObject({status:403})
+    expect((await service.get(A,OWNER)).quota.used).toBe(1)
+    await database.update(schema.tenants).set({plan:'pro'}).where(eq(schema.tenants.id,A))
+    expect((await service.get(A,OWNER)).quota).toMatchObject({used:1,limit:40,remaining:39})
+  })
+  it('revierte una reserva fallida sin consumir cuota', async () => {
+    await expect(scoped(A,async tx=>{await reserveAi(tx,A,'dddddddd-dddd-dddd-dddd-dddddddddddd');throw new Error('rollback')})).rejects.toThrow('rollback')
+    expect((await service.get(A,OWNER)).quota.used).toBe(0)
+  })
+})
+
+it('envía los últimos veinte mensajes y conserva la conversación completa', async () => {
+  const messages=Array.from({length:24},(_,i)=>({role:i%2?'assistant' as const:'user' as const,text:'Turno '+i}))
+  await database.insert(schema.onboardingSessions).values({tenantId:A,messages,revision:0})
+  const view=await service.message(A,OWNER,'Nueva consulta',0)
+  expect(provider.generate.mock.calls[0]![0].messages).toHaveLength(20)
+  expect(view.session?.messages).toHaveLength(26)
+  expect(view.session?.messages[0]?.text).toBe('Turno 0')
+})
+it('RLS impide leer y registrar consumo de otra organización', async () => {
+  await scoped(A,tx=>reserveAi(tx,A,'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'))
+  expect(await scoped(B,tx=>tx.select().from(schema.aiRequests))).toHaveLength(0)
+  expect(await scoped(B,tx=>tx.select().from(schema.aiMonthlyUsage))).toHaveLength(0)
+  await expect(scoped(B,tx=>tx.insert(schema.aiMonthlyUsage).values({tenantId:A,period:'2027-01-01',used:1}))).rejects.toThrow()
 })
