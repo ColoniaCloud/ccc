@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AiQuotaSummary } from '@/components/AiQuotaSummary'
 import { SetupPersonalization } from '@/components/SetupPersonalization'
 
 type Preset = { key: PresetKey; label: string; module: string; stages: string[]; pipelineName: string }
@@ -89,6 +90,7 @@ export default function SetupPage() {
   function changeDraft(next: SetupProposal) { setDraft(next); setApproval(null) }
   return <div className="page">
     <div className="page-header"><div><h1>Prepará tu CRM con Plata</h1><p>Una conversación para adaptar el espacio de {view?.name ?? me.tenant.name}.</p></div>{canConfigure && !completed && <Button variant="outline" disabled={locked} onClick={() => void defer()}>Configurar después</Button>}</div>
+    {canConfigure && view?.quota && <AiQuotaSummary quota={view.quota} />}
     {error && <Alert variant="destructive"><AlertDescription><div className="flex flex-col items-start gap-2"><p>{error}</p><Button variant="outline" size="sm" disabled={busy} onClick={() => void refresh().catch((err: Error) => setError(err.message))}>Actualizar conversación</Button></div></AlertDescription></Alert>}
     {!view ? !error && <Skeleton className="h-64 w-full" /> : <>
       {!canConfigure && <Alert><AlertDescription>Solo el propietario o un administrador puede preparar y aprobar la configuración.</AlertDescription></Alert>}
@@ -106,11 +108,11 @@ export default function SetupPage() {
       </CardContent></Card> : !deferred && <div className="grid items-start gap-4 xl:grid-cols-2">
         <Card><CardHeader><CardTitle role="heading" aria-level={2}>Conversemos sobre tu negocio</CardTitle><CardDescription>Ya tengo los datos del registro. Las respuestas se guardan para retomar después.</CardDescription></CardHeader><CardContent className="flex flex-col gap-4">
           {view.profile && <p className="rounded-md border p-3 text-sm text-muted-foreground">{view.profile.offering}</p>}
-          {!view.session?.messages.length ? <><p>Contame cómo trabajás hoy y qué herramientas usás. No compartas contraseñas ni datos privados de tus clientes.</p><Button disabled={locked || !canConfigure || !view.supported || !view.configured} onClick={() => void send('Quiero preparar el CRM para mi negocio. Empecemos con los datos del registro.')}>Empezar preparación</Button></> : <>
+          {!view.session?.messages.length ? <><p>Contame cómo trabajás hoy y qué herramientas usás. No compartas contraseñas ni datos privados de tus clientes.</p><Button disabled={locked || !canConfigure || !view.supported || !view.configured || view.quota?.remaining === 0} onClick={() => void send('Quiero preparar el CRM para mi negocio. Empecemos con los datos del registro.')}>Empezar preparación</Button></> : <>
             <div role="log" aria-label="Conversación de preparación" aria-live="polite" className="flex max-h-[34rem] flex-col gap-3 overflow-y-auto">
               {view.session.messages.map((item, index) => <div key={index} className="rounded-md border p-3"><p className="mb-1 text-xs text-muted-foreground">{item.role === 'assistant' ? 'Asistente de Plata' : 'Tu equipo'}</p><p className="whitespace-pre-wrap break-words">{item.text}</p></div>)}<div ref={bottom} />
             </div>
-            <form className="flex flex-col gap-3" onSubmit={(event) => { event.preventDefault(); void send(message) }}><FieldGroup><Field data-disabled={locked || !canConfigure}><FieldLabel htmlFor="setup-message">Tu respuesta</FieldLabel><Textarea id="setup-message" maxLength={2000} required value={message} disabled={locked || !canConfigure || !view.configured} onChange={(event) => setMessage(event.target.value)} placeholder="Contame cómo trabajan, o pedime una propuesta con lo que ya sabemos…" /></Field></FieldGroup><Button disabled={locked || !canConfigure || !view.configured || !message.trim()}>Enviar respuesta</Button></form>
+            <form className="flex flex-col gap-3" onSubmit={(event) => { event.preventDefault(); void send(message) }}><FieldGroup><Field data-disabled={locked || !canConfigure}><FieldLabel htmlFor="setup-message">Tu respuesta</FieldLabel><Textarea id="setup-message" maxLength={2000} required value={message} disabled={locked || !canConfigure || !view.configured || view.quota?.remaining === 0} onChange={(event) => setMessage(event.target.value)} placeholder="Contame cómo trabajan, o pedime una propuesta con lo que ya sabemos…" /></Field></FieldGroup><Button disabled={locked || !canConfigure || !view.configured || view.quota?.remaining === 0 || !message.trim()}>Enviar respuesta</Button></form>
           </>}
           {locked && <p role="status" className="text-sm text-muted-foreground">El asistente está preparando una respuesta… Podés volver más tarde; la conversación queda guardada.</p>}
         </CardContent></Card>

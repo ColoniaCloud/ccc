@@ -60,6 +60,7 @@ export type SetupProcess = { presetKey: PresetKey; name: string; openStages: str
 export type SetupField = { key: string; label: string; fieldType: CustomFieldType; options?: string[] }
 export type SetupTurn = { reply: string; proposal: SetupProposal | null }
 export type SetupSnapshot = {
+  quota?: AiQuotaSnapshot
   name: string
   profile: BusinessProfile | null
   required: boolean
@@ -67,6 +68,7 @@ export type SetupSnapshot = {
   configured: boolean
   session: { status: SetupStatus; revision: number; messages: SetupMessage[]; proposal: SetupProposal | null; busy: boolean } | null
 }
+export type AiQuotaSnapshot = { period: string; resetsOn: string; timeZone: string; plan: string; limit: number; used: number; remaining: number; inputTokens: number; outputTokens: number }
 
 export interface PresetPreview {
   key: PresetKey

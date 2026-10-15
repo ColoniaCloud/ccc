@@ -5,9 +5,10 @@ import type { SetupProposal } from '@crm/shared'
 import type { TenantTx } from '../db/tenant-db'
 import { tenants, members, onboardingSessions } from '../db/schema'
 import { previewPreset, applyPreset } from '../presets/service'
-import { allowedPresets, validateProposal, validateRevision, profileFingerprint, MAX_SETUP_ATTEMPTS, REQUEST_LEASE_MS } from './assistant-policy'
+import { allowedPresets, validateProposal, validateRevision, profileFingerprint, REQUEST_LEASE_MS } from './assistant-policy'
 import type { SetupAssistant } from './anthropic'
 import { startPilot, recordPilotActivity } from './pilot'
+import { reserveAi, finishAi, quotaSnapshot } from './ai-quota'
 import { previewFields, applyFields, configurationContext } from './personalization'
 
 export type TenantRunner = <T>(tenantId: string, run: (tx: TenantTx) => Promise<T>) => Promise<T>
@@ -23,12 +24,12 @@ export class OnboardingAssistantService {
     return tenant
   }
   private async session(tx: TenantTx, tenantId: string) { return tx.query.onboardingSessions.findFirst({ where: eq(onboardingSessions.tenantId, tenantId) }) }
-  private view(tenant: typeof tenants.$inferSelect, session: typeof onboardingSessions.$inferSelect | undefined) {
-    return { name: tenant.name, profile: tenant.businessProfile, required: tenant.setupRequired, supported: allowedPresets(tenant.businessProfile).length > 0, configured: this.assistant.configured,
+  private async view(tx: TenantTx, tenant: typeof tenants.$inferSelect, session: typeof onboardingSessions.$inferSelect | undefined) {
+    return { quota: await quotaSnapshot(tx,tenant.id), name: tenant.name, profile: tenant.businessProfile, required: tenant.setupRequired, supported: allowedPresets(tenant.businessProfile).length > 0, configured: this.assistant.configured,
       session: session ? { status: session.status, revision: session.revision, messages: session.messages, proposal: session.proposal, busy: busy(session) } : null }
   }
   async get(tenantId: string, memberId: string) {
-    return this.scoped(tenantId, async (tx) => this.view(await this.access(tx, tenantId, memberId, false), await this.session(tx, tenantId)))
+    return this.scoped(tenantId, async (tx) => this.view(tx, await this.access(tx, tenantId, memberId, false), await this.session(tx, tenantId)))
   }
   async message(tenantId: string, memberId: string, text: unknown, revision: unknown) {
     if (typeof text !== 'string' || !text.trim() || text.length > 2000) throw new HTTPException(400, { message: 'Escribí un mensaje de hasta 2000 caracteres' })
@@ -42,14 +43,15 @@ export class OnboardingAssistantService {
       if ((session?.revision ?? 0) !== expected) throw new HTTPException(409, { message: 'La conversación cambió. Actualizala antes de continuar' })
       if (session?.status === 'completed') throw new HTTPException(409, { message: 'Este onboarding ya está completado' })
       if (busy(session)) throw new HTTPException(409, { message: 'El asistente está preparando una respuesta' })
-      if ((session?.attempts ?? 0) >= MAX_SETUP_ATTEMPTS) throw new HTTPException(429, { message: 'Alcanzaste el límite de consultas de esta preparación. Podés editar la propuesta o configurar el CRM manualmente' })
+      await reserveAi(tx, tenantId, requestId)
       if (!session) session = (await tx.insert(onboardingSessions).values({ tenantId }).returning())[0]!
       await tx.update(onboardingSessions).set({ pendingRequestId: requestId, requestStartedAt: new Date(), attempts: session.attempts + 1, revision: session.revision + 1, status: session.proposal ? 'ready' : 'in_progress', updatedAt: new Date() }).where(eq(onboardingSessions.tenantId, tenantId))
       return { context: { name: tenant.name, profile: tenant.businessProfile, messages: [...session.messages, { role: 'user' as const, text: text.trim() }], proposal: session.proposal, configuration: await configurationContext(tx, tenantId) }, profileHash: profileFingerprint(tenant.businessProfile) }
     })
     try {
       // La petición a Anthropic sucede sin transacción ni conexión PostgreSQL retenida.
-      const response = await this.assistant.generate(prepared.context)
+      const response = await this.assistant.generate({...prepared.context,messages:prepared.context.messages.slice(-20)})
+      await this.scoped(tenantId,tx=>finishAi(tx,tenantId,requestId,response))
       return await this.scoped(tenantId, async (tx) => {
         const tenant = await this.access(tx, tenantId, memberId), session = await this.session(tx, tenantId)
         if (!session || session.pendingRequestId !== requestId) throw new HTTPException(409, { message: 'Esta respuesta fue reemplazada por una acción más reciente' })
@@ -59,10 +61,11 @@ export class OnboardingAssistantService {
         const [updated] = await tx.update(onboardingSessions).set({ messages: [...prepared.context.messages, { role: 'assistant', text: response.turn.reply }], proposal,
           status: proposal ? 'ready' : 'in_progress', pendingRequestId: null, revision: session.revision + 1,
           inputTokens: session.inputTokens + response.inputTokens, outputTokens: session.outputTokens + response.outputTokens, updatedAt: new Date() }).where(eq(onboardingSessions.tenantId, tenantId)).returning()
-        return this.view(tenant, updated)
+        return this.view(tx, tenant, updated)
       })
     } catch (error) {
       await this.scoped(tenantId, async (tx) => {
+        await finishAi(tx,tenantId,requestId)
         await tx.update(onboardingSessions).set({ pendingRequestId: null, updatedAt: new Date() }).where(and(eq(onboardingSessions.tenantId, tenantId), eq(onboardingSessions.pendingRequestId, requestId)))
       })
       if (error instanceof HTTPException) throw error
@@ -76,7 +79,7 @@ export class OnboardingAssistantService {
       if (!session?.proposal || session.status !== 'ready' || busy(session) || session.revision !== expected) throw new HTTPException(409, { message: 'La propuesta cambió. Actualizala antes de editar' })
       const proposal = validateProposal(input, tenant.businessProfile)
       const [updated] = await tx.update(onboardingSessions).set({ proposal, revision: session.revision + 1, updatedAt: new Date() }).where(eq(onboardingSessions.tenantId, tenantId)).returning()
-      return this.view(tenant, updated)
+      return this.view(tx, tenant, updated)
     })
   }
   private async approval(tx: TenantTx, tenant: typeof tenants.$inferSelect, session: typeof onboardingSessions.$inferSelect) {
@@ -102,7 +105,7 @@ export class OnboardingAssistantService {
     if (typeof fingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(fingerprint)) throw new HTTPException(400, { message: 'Revisá la propuesta antes de aprobar' })
     return this.scoped(tenantId, async (tx) => {
       const tenant = await this.access(tx, tenantId, memberId), session = await this.session(tx, tenantId)
-      if (session?.status === 'completed') return this.view(tenant, session)
+      if (session?.status === 'completed') return this.view(tx, tenant, session)
       if (!session || session.status !== 'ready' || busy(session) || session.revision !== expected) throw new HTTPException(409, { message: 'La propuesta cambió. Revisala nuevamente' })
       const approval = await this.approval(tx, tenant, session)
       if (approval.conflicts.length || approval.fingerprint !== fingerprint) throw new HTTPException(409, { message: approval.conflicts.join(' ') || 'La configuración cambió. Revisá nuevamente los cambios' })
@@ -118,7 +121,7 @@ export class OnboardingAssistantService {
       const [updatedTenant] = await tx.update(tenants).set({ setupRequired: false, updatedAt: new Date() }).where(eq(tenants.id, tenantId)).returning()
       const [updated] = await tx.update(onboardingSessions).set({ status: 'completed', revision: session.revision + 1, updatedAt: new Date() }).where(eq(onboardingSessions.tenantId, tenantId)).returning()
       await recordPilotActivity(tx, tenantId, memberId)
-      return this.view(updatedTenant!, updated)
+      return this.view(tx, updatedTenant!, updated)
     })
   }
   async defer(tenantId: string, memberId: string) {
@@ -136,7 +139,7 @@ export class OnboardingAssistantService {
       if (!session || session.status !== 'completed' || session.revision !== expected || busy(session)) throw new HTTPException(409, { message: 'Actualizá la preparación antes de ajustarla' })
       const proposal = validateProposal(session.proposal, tenant.businessProfile)
       const [updated] = await tx.update(onboardingSessions).set({ status: 'ready', proposal: { ...proposal, processes: [], fields: [] }, revision: session.revision + 1, updatedAt: new Date() }).where(eq(onboardingSessions.tenantId, tenantId)).returning()
-      return this.view(tenant, updated)
+      return this.view(tx, tenant, updated)
     })
   }
   async resume(tenantId: string, memberId: string) {
@@ -144,9 +147,9 @@ export class OnboardingAssistantService {
       const tenant = await this.access(tx, tenantId, memberId), session = await this.session(tx, tenantId)
       if (session?.status === 'deferred') {
         const [updated] = await tx.update(onboardingSessions).set({ status: session.proposal ? 'ready' : 'in_progress', revision: session.revision + 1, updatedAt: new Date() }).where(eq(onboardingSessions.tenantId, tenantId)).returning()
-        return this.view(tenant, updated)
+        return this.view(tx, tenant, updated)
       }
-      return this.view(tenant, session)
+      return this.view(tx, tenant, session)
     })
   }
 }

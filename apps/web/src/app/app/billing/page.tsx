@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { AiQuotaSnapshot } from '@crm/shared'
+import { AiQuotaSummary } from '@/components/AiQuotaSummary'
 import { useApp } from '../app-context'
 
 type PlanItem = { key: string; label: string; priceUsd: number | null; payable: boolean }
@@ -18,6 +20,15 @@ type Status = {
 
 export default function BillingPage() {
   const { apiFetch, me } = useApp()
+
+  const [quota, setQuota] = useState<AiQuotaSnapshot | null>(null)
+  const [quotaError, setQuotaError] = useState(false)
+  useEffect(() => {
+    if (!['owner','admin'].includes(me.member.role)) return
+    const controller = new AbortController()
+    apiFetch('/api/ai/usage', { signal: controller.signal }).then(async res => { if (!res.ok) throw new Error(); const data = await res.json(); setQuota(data.quota) }).catch(() => { if (!controller.signal.aborted) setQuotaError(true) })
+    return () => controller.abort()
+  }, [apiFetch, me.member.role])
 
   const [plans, setPlans]     = useState<PlanItem[] | null>(null)
   const [status, setStatus]   = useState<Status | null>(null)
@@ -109,6 +120,8 @@ export default function BillingPage() {
 
   return (
     <div className="page">
+      {quota && <AiQuotaSummary quota={quota} />}
+      {quotaError && <p role="status">No se pudo cargar el consumo de IA. Volvé a abrir esta página para actualizarlo.</p>}
       <div className="page-header">
         <div>
           <h1>Facturación</h1>
