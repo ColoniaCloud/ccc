@@ -26,7 +26,6 @@ import {
 import { useApp } from './app-context'
 import { SetupWelcome } from '@/components/SetupWelcome'
 import { ActivationGuide } from '@/components/ActivationGuide'
-import { PilotMetrics } from '@/components/PilotMetrics'
 import { DailyFocus } from '@/components/DailyFocus'
 import { commercialSummary, pipelineSummary } from '@crm/shared'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from '@/components/ui/select'
@@ -86,6 +85,7 @@ function formatMoney(value: string, currency: string) {
 export default function AppHomePage() {
   const { me, apiFetch } = useApp()
   const [data, setData] = useState<DashboardData | null>(null)
+  const [activationReady, setActivationReady] = useState(false)
   const [pipelineId, setPipelineId] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -178,8 +178,13 @@ export default function AppHomePage() {
         </div>
       </div>
 
-      <ActivationGuide />
-      <DailyFocus key={me.tenant.id} />
+      {(activationReady ? [
+        <DailyFocus key="daily" />,
+        <ActivationGuide key="activation" onReadyChange={setActivationReady} />,
+      ] : [
+        <ActivationGuide key="activation" onReadyChange={setActivationReady} />,
+        <DailyFocus key="daily" />,
+      ])}
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -312,7 +317,7 @@ export default function AppHomePage() {
           )}
         </CardContent>
       </Card>
-      <PilotMetrics />
+
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import './settings.css'
+import { useApp } from '../app-context'
 
 const SETTINGS_NAV = [
   { href: '/app/settings/team',          label: 'Equipo' },
@@ -15,6 +16,8 @@ const SETTINGS_NAV = [
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { me } = useApp()
+  const canMeasure = ['owner','admin'].includes(me.member.role)
 
   return (
     <div className="page">
@@ -27,7 +30,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
       <div className="settings-shell">
         <nav className="settings-nav">
-          {SETTINGS_NAV.map((item) => (
+          {[...SETTINGS_NAV, ...(canMeasure ? [{ href: '/app/settings/pilot', label: 'Medición del piloto' }] : [])].map((item) => (
             <Link
               key={item.href}
               href={item.href}
