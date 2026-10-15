@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import * as schema from '../../db/schema'
 import type { TenantTx } from '../../db/tenant-db'
-import { startPilot, recordPilotActivity, pilotReport, pilotWeeks } from '../pilot'
+import { startPilot, recordPilotActivity, pilotReport, pilotWeeks, pilotEvidence } from '../pilot'
 import { commercialSummary, pipelineSummary } from '@crm/shared'
 const A = '11111111-1111-1111-1111-111111111111', B = '22222222-2222-2222-2222-222222222222', MEMBER = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 let client: PGlite, db: ReturnType<typeof drizzle<typeof schema>>
@@ -84,4 +84,24 @@ it('excluye cierres del total abierto y separa el gráfico de cada proceso y las
   expect(commercialSummary(deals, pipelines)).toEqual({ openCount: 2, usdPipeline: 100 })
   expect(pipelineSummary(deals, pipelines[1]).count).toBe(2)
   expect(pipelineSummary(deals, pipelines[1]).stages.map(s => s.count)).toEqual([1, 1])
+})
+
+it('exporta evidencia agregada sin iniciar el piloto ni incluir datos personales', async () => {
+  await db.insert(schema.contacts).values({tenantId:A,name:'Persona privada de prueba'})
+  await db.insert(schema.aiMonthlyUsage).values({tenantId:A,period:'2026-10-01',used:3,inputTokens:500,outputTokens:100})
+  const report=await scoped(A,tx=>pilotEvidence(tx,A,new Date('2026-10-14T15:00:00Z')))
+  expect(report).toMatchObject({version:1,timeZone:'America/Montevideo',measurement:{startedAt:null},ai:{used:3,remaining:7,period:'2026-10-01'}})
+  expect(JSON.stringify(report)).not.toContain('Persona privada')
+  expect(await db.select().from(schema.pilotMeasurements)).toHaveLength(0)
+  expect(await scoped(B,tx=>pilotEvidence(tx,B))).toBeNull()
+})
+it('distingue hitos existentes, fecha de generación y consumo de cada organización', async () => {
+  const now=new Date('2026-10-14T15:00:00Z')
+  await scoped(A,tx=>startPilot(tx,A,MEMBER,now))
+  await db.insert(schema.aiMonthlyUsage).values({tenantId:B,period:'2026-10-01',used:9})
+  const evidence=await scoped(A,tx=>pilotEvidence(tx,A,now))
+  expect(evidence?.generatedAt).toBe(now.toISOString())
+  expect(evidence?.ai.used).toBe(0)
+  expect(evidence?.measurement.weeks).toHaveLength(4)
+  expect(evidence?.notes).toHaveLength(4)
 })
