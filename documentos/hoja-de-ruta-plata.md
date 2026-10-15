@@ -244,12 +244,21 @@ Publicada mediante PR #8 en main `c621009`, con backup restaurado de prueba, mig
 
 ## Preparación operativa del piloto
 
-Implementada en `codex/pilot-evidence`, pendiente de publicación:
+Publicada mediante PR #9 en main `c0b7fb3`, con respaldo restaurado, CI y despliegue correctos; generación del informe verificada en producción:
 
 - Descarga de un informe JSON desde Medición del piloto para propietario y administradores, con hitos, últimas cuatro semanas de actividad y cuota del mes.
 - Distingue hitos baseline, métricas de actividad y tokens conocidos. La descarga es de lectura y no inicia la medición ni llama a Anthropic.
 - Sin nombres de contactos, correos ni conversaciones; la descarga conserva métricas internas del negocio y debe almacenarse en privado.
 - Guía de siete días y criterios propuestos de salida en `documentos/piloto-operativo.md`. La prueba local no sustituye el uso de dos negocios reales.
+
+## UI/UX: primera entrega de dos puntos
+
+Implementada en `codex/ui-daily-mobile`, pendiente de publicación:
+
+1. Inicio: Tu día aparece antes de la activación cuando el recorrido está completo. Los pasos y Calendar quedan plegados con control accesible por teclado. Las organizaciones con pasos pendientes conservan la guía por delante de Tu día. La medición del piloto y su descarga pasan a Configuración → Medición del piloto, para propietario/admin.
+2. Móvil: botones compartidos con altura mínima de 44 px, íconos de acción con ancho mínimo de 44 px y campos/selectores compartidos con altura mínima de 44 px por debajo de 768 px. Se conserva la densidad de escritorio y no se alteran permisos ni datos.
+
+Comprobación en navegador: orden para estado activado y pendiente, plegado con teclado, alturas medidas, formulario de tareas en portal, exportación y acceso support. Inicio móvil con la demo: 3942 → 2568 px de alto; resultados específicos de los datos de prueba. Próximos dos puntos de la auditoría: portadas del catálogo y próximo seguimiento visible en oportunidades.
 
 ## Siguientes entregas
 

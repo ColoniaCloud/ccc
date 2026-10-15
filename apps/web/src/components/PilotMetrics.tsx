@@ -38,7 +38,8 @@ export function PilotMetrics() {
     } catch (err) { setError(err instanceof Error ? err.message : 'No se pudo descargar el informe') }
     finally { setBusy(false) }
   }
-  if (!allowed || report?.supported === false) return null
+  if (!allowed) return null
+  if (report?.supported === false) return <Alert><AlertDescription>La medición del piloto está disponible para inmobiliarias y automotor.</AlertDescription></Alert>
   return <Card><CardHeader><CardTitle>Medición del piloto</CardTitle><CardDescription>Hitos conservados y actividad comercial de {me.tenant.name}. Las semanas siguen la hora de Uruguay.</CardDescription></CardHeader><CardContent className="flex flex-col gap-4">
     {error && <Alert variant="destructive"><AlertDescription>{error} <Button variant="outline" size="sm" onClick={() => setRevision(n => n + 1)}>Reintentar</Button></AlertDescription></Alert>}
     {report && <div className="flex flex-col items-start gap-2"><Button variant="outline" disabled={busy} onClick={() => void download()}>Descargar informe del piloto</Button><p className="text-xs text-muted-foreground">Incluye hitos, cuatro semanas de actividad y consumo de IA del mes. Sin nombres de contactos ni conversaciones.</p></div>}
