@@ -31,13 +31,17 @@ export default function AgentsPage() {
   const [tab, setTab] = useState('pending'), [demo, setDemo] = useState(false), [demoApproved, setDemoApproved] = useState(false)
   const sequence = useRef(0)
   const request = useCallback(async (path: string, init?: RequestInit) => {
-    const res = await apiFetch(`/api/agents${path}`, init), data = await res.json()
+    const res = await apiFetch(`/api/agents${path}`, init)
+    if (!res.headers.get('content-type')?.includes('application/json')) {
+      throw new Error(`No se pudo cargar Agentes (HTTP ${res.status}). Reintentá en unos momentos.`)
+    }
+    const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'No se pudo completar la operación')
     return data
   }, [apiFetch])
   const load = useCallback(async () => {
     const seq = ++sequence.current
-    const [list, view] = await Promise.all([request('/'), selected ? request(`/${selected}`) : Promise.resolve(null)])
+    const [list, view] = await Promise.all([request(''), selected ? request(`/${selected}`) : Promise.resolve(null)])
     if (sequence.current === seq) { setOverview(list); setDetail(view) }
   }, [request, selected])
   useEffect(() => {
@@ -82,7 +86,7 @@ export default function AgentsPage() {
       {overview.quota.agents === 0 && <Card><CardHeader><CardTitle>Probá Seguimiento comercial</CardTitle><CardDescription>Demostración con datos ficticios, sin usar tu cuota ni modificar el CRM.</CardDescription></CardHeader><CardContent className="flex flex-col gap-4">
         {!demo ? <p className="text-sm">El agente detecta una oportunidad abierta sin actividad y prepara el próximo paso para tu revisión.</p> : <div className="flex flex-col gap-2"><Badge variant="outline">Ejemplo ficticio</Badge><p className="font-medium">Dar seguimiento: Visita al apartamento del Centro</p><p className="text-sm text-muted-foreground">Pasaron 7 días sin actividad registrada y no hay una tarea pendiente.</p><p className="text-sm">Propuesta: contactar al interesado para conocer su impresión y acordar el próximo paso.</p>{demoApproved && <p role="status">Aprobación simulada. En un plan pago, esta acción crearía una tarea en tu Agenda.</p>}</div>}
       </CardContent><CardFooter><Button variant="outline" onClick={() => demo ? setDemoApproved(true) : setDemo(true)} disabled={demoApproved}>{demo ? 'Simular aprobación' : 'Probar con un ejemplo'}</Button></CardFooter></Card>}
-      {creating && <AgentForm busy={busy} pipelines={overview.pipelines} onCancel={() => setCreating(false)} onSave={async values => { const r = await mutate('/', values); if (r) { setCreating(false); setSelected(r.item.id); setTab('config'); setNotice('Agente creado en pausa. Revisá la configuración y activalo para comenzar.') } }} />}
+      {creating && <AgentForm busy={busy} pipelines={overview.pipelines} onCancel={() => setCreating(false)} onSave={async values => { const r = await mutate('', values); if (r) { setCreating(false); setSelected(r.item.id); setTab('config'); setNotice('Agente creado en pausa. Revisá la configuración y activalo para comenzar.') } }} />}
       {overview.items.length > 0 && <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
         <nav aria-label="Agentes de la organización" className="flex flex-col gap-2">{overview.items.map(a => <Button key={a.id} variant={a.id === selected ? 'secondary' : 'outline'} className="h-auto min-h-14 justify-start whitespace-normal text-left" disabled={busy} onClick={() => { setSelected(a.id); setCreating(false); setTab('pending'); setNotice('') }}><span className="flex min-w-0 flex-col gap-1"><span className="break-words">{a.name}</span><span className="text-xs text-muted-foreground">{a.locked ? 'Fuera del cupo del plan' : a.status === 'active' ? 'Activo · ejecución manual' : 'En pausa'}</span></span></Button>)}</nav>
         {!selected ? <Empty><EmptyHeader><EmptyTitle>Elegí un agente</EmptyTitle><EmptyDescription>Revisá sus propuestas, conversá o consultá el historial.</EmptyDescription></EmptyHeader></Empty> : !detail ? <Skeleton className="h-64 w-full" /> : <section className="flex min-w-0 flex-col gap-4" aria-label={detail.item.name}>

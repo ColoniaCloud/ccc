@@ -8,6 +8,15 @@ import { AnthropicAgentAssistant } from '../agents/provider'
 
 const service = new AgentService(withTenant, new AnthropicAgentAssistant())
 export const agentsRoutes = new Hono<{ Variables: HonoVariables }>()
+// Hono mounts the root handler at /api/agents (without a final slash).
+// Preserve the method/body for clients still using /api/agents/.
+agentsRoutes.use('*', async (c, next) => {
+  if (c.req.path === '/api/agents/') {
+    const url = new URL(c.req.url)
+    return c.redirect(`/api/agents${url.search}`, 308)
+  }
+  return next()
+})
 agentsRoutes.use('*', authMiddleware, tenantAccessMiddleware)
 agentsRoutes.use('*', async (c, next) => { c.header('Cache-Control', 'no-store'); await next() })
 agentsRoutes.get('/', async c => c.json({ status: 'ok', ...await service.list(c.get('tenantId'), c.get('memberId')) }))
