@@ -32,6 +32,7 @@ import { activationRoutes } from './routes/activation'
 import { pilotRoutes } from './routes/pilot'
 import { catalogPhotoRoutes } from './routes/catalog-photos'
 import { aiUsageRoutes } from './routes/ai-usage'
+import { agentsRoutes } from './routes/agents'
 
 const app = new Hono()
 
@@ -81,6 +82,7 @@ app.route('/api/activation', activationRoutes)
 app.route('/api/pilot', pilotRoutes)
 app.route('/api/catalog-photos', catalogPhotoRoutes)
 app.route('/api/ai/usage', aiUsageRoutes)
+app.route('/api/agents', agentsRoutes)
 app.route('/api/billing', billingRoutes)
 app.route('/api/modules', modulesRoutes)
 app.route('/api/tags', tagsRoutes)
