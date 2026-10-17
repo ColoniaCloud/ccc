@@ -91,7 +91,7 @@ export class AgentService {
     const rows = await tx.select({ dealId: deals.id, title: deals.title, contactId: deals.contactId, assignedTo: deals.assignedTo, observedAt: lastActivity })
       .from(deals).innerJoin(pipelineStages, eq(pipelineStages.id, deals.stageId)).innerJoin(pipelines, and(eq(pipelines.id, deals.pipelineId), eq(pipelines.tenantId, tenantId)))
       .where(and(eq(deals.tenantId, tenantId), eq(pipelineStages.outcome, 'open'), agent.pipelineId ? eq(deals.pipelineId, agent.pipelineId) : undefined, dealId ? eq(deals.id, dealId) : undefined,
-        sql`${lastActivity} < ${new Date(Date.now() - agent.staleDays * 86400000)}`,
+        sql`${lastActivity} < ${new Date(Date.now() - agent.staleDays * 86400000).toISOString()}::timestamp`,
         sql`not exists (select 1 from tasks t where t.tenant_id = ${tenantId} and t.deal_id = ${deals.id} and t.done = false)`))
       .orderBy(asc(lastActivity), asc(deals.id)).limit(limit)
     return rows.map(r => ({ ...r, title: r.title.slice(0, 200), observedAt: r.observedAt.toISOString() }))
